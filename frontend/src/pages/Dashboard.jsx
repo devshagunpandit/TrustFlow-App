@@ -11,14 +11,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Heart, Plus, Settings, LogOut, MoreVertical, ExternalLink, Copy, Trash2, Loader2 } from 'lucide-react';
+import { Heart, Plus, Settings, LogOut, MoreVertical, ExternalLink, Copy, Trash2, Loader2, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
+import ProfileModal from '@/components/ProfileModal';
 
 const Dashboard = () => {
-  const { user, profile, signOut, loading: authLoading } = useAuth();
+  const { user, profile, signOut, loading: authLoading, refreshProfile } = useAuth();
   const [spaces, setSpaces] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState('');
@@ -183,32 +186,66 @@ const Dashboard = () => {
             </span>
           </Link>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2">
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src={profile?.avatar_url} />
-                  <AvatarFallback className="bg-violet-100 text-violet-600">
-                    {user.email?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden sm:inline text-sm">
-                  {profile?.full_name || user.email}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem>
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+{/* --- START OF PROFILE DROPDOWN --- */}
+            <div className="relative ml-2">
+              {/* ✅ NEW CODE: Handles 404s and Empty URLs automatically */}
+                <button 
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="rounded-full focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition-all"
+                >
+                  <Avatar className="w-9 h-9 border border-violet-200 dark:border-violet-800">
+                    {/* 1. Try to load the image */}
+                    <AvatarImage 
+                      src={profile?.avatar_url} 
+                      alt={profile?.full_name || "User"} 
+                      className="object-cover"
+                    />
+                    
+                    {/* 2. If image fails or is missing, show this Icon */}
+                    <AvatarFallback className="bg-violet-100 dark:bg-violet-900/30 text-violet-600">
+                      <User className="w-5 h-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              {/* Dropdown Menu */}
+              {isProfileOpen && (
+                <>
+                  {/* Invisible backdrop to close menu when clicking outside */}
+                  <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)} />
+                  
+                  <div className="absolute right-0 top-12 w-60 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+                    {/* User Info Header */}
+                    <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                        {profile?.full_name || 'User'}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                        {user?.email}
+                      </p>
+                    </div>
+                    
+                    {/* Menu Items */}
+                    <div className="p-1.5 space-y-1">
+                      <button 
+                        onClick={() => { setIsProfileOpen(false); setIsProfileModalOpen(true); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-600 dark:hover:text-violet-400 rounded-lg transition-colors text-left"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Profile Settings
+                      </button>
+                       <button 
+                        onClick={() => signOut()} 
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-left"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            {/* --- END OF PROFILE DROPDOWN --- */}
         </div>
       </header>
 
@@ -372,6 +409,14 @@ const Dashboard = () => {
           </div>
         )}
       </main>
+      {/* --- STEP 4: PROFILE MODAL COMPONENT --- */}
+      <ProfileModal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)}
+        user={user} 
+        profile={profile} 
+        onProfileUpdate={refreshProfile} 
+      />
     </div>
   );
 };

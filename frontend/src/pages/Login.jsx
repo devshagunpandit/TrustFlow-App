@@ -8,18 +8,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { signInWithEmail, signInWithMagicLink, signInWithGoogle, signInWithGithub } from '@/lib/supabase';
-import { Heart, Mail, Github, Loader2 } from 'lucide-react';
+import { Heart, Mail, Github, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState(''); 
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [authMode, setAuthMode] = useState('password'); // 'password' or 'magic'
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+ 
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -27,8 +31,39 @@ const Login = () => {
     }
   }, [user, authLoading, navigate]);
 
-  const handleEmailLogin = async (e) => {
+  const handleEmailBlur = () => {
+    if (!email) return; // Don't error on empty, let required handle it
+    
+    // Simple regex for email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError("Please enter a valid email address.");
+    }
+  };
+
+ const handleEmailLogin = async (e) => {
     e.preventDefault();
+    setError(''); // Clear general error
+    
+    // 1. Validation Logic
+    let isValid = true;
+
+    if (!email) {
+      setEmailError("Email is required.");
+      isValid = false;
+    }
+
+    if (!password && authMode === 'password') {
+      setPasswordError("Password is required.");
+      isValid = false;
+    }
+
+    // 2. CHECK VALIDATION FIRST
+    // If validation fails, we return immediately.
+    // We have NOT set loading to true yet, so the button stays clickable.
+    if (!isValid || emailError) return;
+
+    // 3. START LOADING ONLY NOW
     setLoading(true);
 
     try {
@@ -43,15 +78,30 @@ const Login = () => {
       } else {
         const { error } = await signInWithEmail(email, password);
         if (error) throw error;
-        navigate('/dashboard');
+        // Success!
       }
     } catch (error) {
-      toast({
-        title: 'Login failed',
-        description: error.message,
-        variant: 'destructive',
-      });
+      let msg = error.message;
+
+      // Handle Codespaces "Stream" Crash
+      if (
+        msg.includes("body stream") || 
+        msg.includes("json") || 
+        msg.includes("Failed to execute")
+      ) {
+        msg = "Incorrect email or password.";
+      }
+      // Standard Supabase Errors
+      else if (msg.includes("Invalid login credentials")) {
+        msg = "Incorrect email or password.";
+      }
+      else if (msg.includes("Email not confirmed")) {
+        msg = "Please verify your email first.";
+      }
+      
+      setError(msg); 
     } finally {
+      // This stops the loading spinner when the network request finishes
       setLoading(false);
     }
   };
@@ -81,6 +131,7 @@ const Login = () => {
       });
     }
   };
+  
 
   // Redirect if already logged in
   if (user) {
@@ -171,33 +222,71 @@ const Login = () => {
                 </div>
 
                 {/* Email/Password Form */}
-                <form onSubmit={handleEmailLogin} className="space-y-4">
+                <form onSubmit={handleEmailLogin} className="space-y-4" noValidate >
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email" className={emailError ? "text-red-500" : ""}>
+                      Email
+                    </Label>
                     <Input
                       id="email"
                       type="email"
                       placeholder="you@example.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => { 
+                        setEmail(e.target.value); 
+                        setError(''); // <--- Clears the main submit error immediately
+                      }}
+                      onBlur={handleEmailBlur} // Trigger validation on exit
+                      onFocus={() => {setEmailError(''); setError('');}}
+
+                // Clear validation on enter
                       required
+                      className={emailError ? "border-red-500 focus-visible:ring-red-500" : ""}
                     />
+                    
+                    {/* Inline Email Error */}
+                    {emailError && (
+                      <p className="text-xs text-red-500 font-small mt-1 animate-in slide-in-from-top-1">
+                        {emailError}
+                      </p>
+                    )}
                   </div>
 
                   {authMode === 'password' && (
                     <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
+                      <Label htmlFor="password" className={passwordError ? "text-red-500" : ""}>
+                        Password
+                      </Label>
                       <Input
                         id="password"
                         type="password"
                         placeholder="••••••••"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setError(''); // Clear main error
+                        }}
+                        onFocus={() => {
+                          setPasswordError(''); // Clear red box
+                          setError('');         // Clear main error
+                        }}
+                        className={passwordError ? "border-red-500 focus-visible:ring-red-500" : ""}
                       />
+                      
+                      {/* Inline Password Error */}
+                      {passwordError && (
+                        <p className="text-xs text-red-500 font-small mt-1 animate-in slide-in-from-top-1">
+                          {passwordError}
+                        </p>
+                      )}
                     </div>
                   )}
-
+                 {error && (
+                    <div className="flex items-center gap-2 mb-4 text-sm text-red-600 font-medium animate-in fade-in slide-in-from-top-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {error}
+                    </div>
+                  )}
                   <Button
                     type="submit"
                     className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"

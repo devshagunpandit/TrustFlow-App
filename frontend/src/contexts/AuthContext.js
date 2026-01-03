@@ -96,12 +96,30 @@ export const AuthProvider = ({ children }) => {
     };
   }, [fetchProfile]);
 
-  const signOut = useCallback(async () => {
-    await supabaseSignOut();
-    setUser(null);
-    setProfile(null);
-    setLoading(false);
-  }, []);
+  const signOut = async () => {
+    try {
+      // 1. Tell Supabase to kill the session on the server
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    } finally {
+      // 2. Force clear ALL local storage (Removes the cached Supabase token)
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // 3. Reset User State (if you have a setUser function)
+      // If 'setUser' is also not defined, you can remove this line too, 
+      // but it is usually present in AuthContext.
+      if (typeof setUser === 'function') {
+        setUser(null);
+      }
+
+      // 4. HARD Redirect to login
+      // This forces a browser refresh, which wipes all React memory/state
+      // making 'setSession(null)' unnecessary.
+      window.location.replace('/login'); 
+    }
+  };
 
   const value = {
     user,
