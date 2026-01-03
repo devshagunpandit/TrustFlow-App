@@ -9,8 +9,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
 
+  // Helper: Fetch Profile from DB
   const fetchProfile = useCallback(async (userId) => {
     if (!userId) return;
     try {
@@ -32,38 +32,48 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session - use getSession which is faster
     const initAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Session error:', error);
+        // 1. MANUAL TOKEN PARSING (The Fix)
+        // If we see a hash with access_token, manually set the session
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          const params = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            if (!error && data.session) {
+              console.log("Manual session set successfully");
+              // Clear the ugly hash from the URL
+              window.history.replaceState(null, '', window.location.pathname);
+            }
+          }
         }
+
+        // 2. Standard Session Check
+        const { data: { session }, error } = await supabase.auth.getSession();
         
         if (mounted) {
           const currentUser = session?.user || null;
           setUser(currentUser);
-          setLoading(false);
-          setInitialized(true);
-          
-          // Fetch profile in background (non-blocking)
           if (currentUser) {
             fetchProfile(currentUser.id);
           }
+          setLoading(false);
         }
       } catch (error) {
-        console.error('Error getting session:', error);
-        if (mounted) {
-          setLoading(false);
-          setInitialized(true);
-        }
+        console.error('Auth Init Error:', error);
+        if (mounted) setLoading(false);
       }
     };
 
     initAuth();
 
-    // Listen for auth changes
+    // 3. Listen for changes (Sign In / Sign Out)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -76,11 +86,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           setProfile(null);
         }
-        
-        if (!initialized) {
-          setLoading(false);
-          setInitialized(true);
-        }
+        setLoading(false);
       }
     );
 
@@ -88,12 +94,13 @@ export const AuthProvider = ({ children }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile, initialized]);
+  }, [fetchProfile]);
 
   const signOut = useCallback(async () => {
     await supabaseSignOut();
     setUser(null);
     setProfile(null);
+    setLoading(false);
   }, []);
 
   const value = {

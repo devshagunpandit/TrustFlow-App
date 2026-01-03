@@ -1,17 +1,40 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react'; // <--- Import useEffect
+import { Link, useNavigate } from 'react-router-dom'; // <--- Import useNavigate
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Star, Video, FileText, Code, ArrowRight, CheckCircle, Sparkles, Heart } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext'; // <--- Import useAuth
 
 const Landing = () => {
+  const { user, loading } = useAuth(); // <--- Get auth state
+  const navigate = useNavigate();
+
+  // FIX: Redirect to dashboard if user is already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
+
+  // Optional: Show a loading spinner while checking auth status
+  // This prevents the landing page from "flashing" before redirecting
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // ... (Keep the rest of your existing animation variants and code below) ...
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5 }
   };
-
+  
+  // ... rest of your component ...
   const staggerContainer = {
     animate: {
       transition: {
@@ -21,6 +44,7 @@ const Landing = () => {
   };
 
   const demoTestimonials = [
+    // ... keep existing testimonials ...
     {
       id: 1,
       name: 'Sarah Johnson',
@@ -29,6 +53,7 @@ const Landing = () => {
       rating: 5,
       avatar: 'https://i.pravatar.cc/100?img=1'
     },
+    // ... keep others ...
     {
       id: 2,
       name: 'Michael Chen',
@@ -239,7 +264,7 @@ const Landing = () => {
           {[
             { title: 'Video Testimonials', desc: 'Let clients record video reviews directly in their browser' },
             { title: 'Customizable Forms', desc: 'Brand your collection forms with your logo and colors' },
-            { title: 'One-Click Embed', desc: 'Add your Wall of Love to any website with a simple script' },
+            { title: 'One-Click Embed', desc: 'Add a beautiful Wall of Love widget to your website with one line of code' },
             { title: 'Star Ratings', desc: 'Collect 5-star ratings alongside testimonials' },
             { title: 'Moderation', desc: 'Approve which testimonials appear on your widget' },
             { title: 'Multiple Layouts', desc: 'Grid, masonry, or carousel - pick your style' }

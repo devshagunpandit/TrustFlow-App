@@ -12,6 +12,7 @@ import SpaceOverview from "@/pages/SpaceOverview";
 import SubmitTestimonial from "@/pages/SubmitTestimonial";
 import WallOfLove from "@/pages/WallOfLove";
 
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -38,6 +39,7 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+
       
       {/* Public Submission Portal */}
       <Route path="/submit/:slug" element={<SubmitTestimonial />} />

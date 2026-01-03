@@ -39,25 +39,39 @@ export const signInWithMagicLink = async (email) => {
   return { data, error };
 };
 
+// frontend/src/lib/supabase.js
+
+// ... (keep imports)
+
+// frontend/src/lib/supabase.js
+
+// frontend/src/lib/supabase.js
 export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/dashboard`,
+      // REVERTED: Go back to the homepage (Landing)
+      redirectTo: window.location.origin, 
     },
   });
   return { data, error };
 };
 
+// Do the same for GitHub if you use it
+// frontend/src/lib/supabase.js
+
 export const signInWithGithub = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'github',
     options: {
-      redirectTo: `${window.location.origin}/dashboard`,
+      // Auto-detects if you are on localhost or Codespace
+      redirectTo: window.location.origin, 
     },
   });
   return { data, error };
 };
+
+// ... (keep the rest of the file)
 
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut();
@@ -72,4 +86,14 @@ export const getCurrentUser = async () => {
 export const getSession = async () => {
   const { data: { session } } = await supabase.auth.getSession();
   return session;
+};
+
+
+export const verifySignupOtp = async (email, token) => {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'signup'
+  });
+  return { data, error };
 };
