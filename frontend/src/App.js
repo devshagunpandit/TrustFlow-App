@@ -11,6 +11,7 @@ import Dashboard from "@/pages/Dashboard";
 import SpaceOverview from "@/pages/SpaceOverview";
 import SubmitTestimonial from "@/pages/SubmitTestimonial";
 import WallOfLove from "@/pages/WallOfLove";
+import ForgotPassword from "./pages/ForgotPassword";
 
 
 // Protected Route Component
@@ -38,6 +39,7 @@ function AppRoutes() {
       {/* Public Routes */}
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword/>}/>
       <Route path="/signup" element={<Signup />} />
 
       
