@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+backend/venv/
+venv/
+.venv/
+
+# Python compiled files
+__pycache__/
+*.py[cod]
+
+# Environment variables (SECURITY RISK if uploaded)
+.env
+.env.local
+
+# System files
+.DS_Store

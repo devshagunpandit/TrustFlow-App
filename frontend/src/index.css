@@ -113,3 +113,13 @@ code {
         border-bottom-color: inherit;
     }
 }
+
+/* Custom utility to force transparency only when needed */
+.force-transparent {
+  background-color: transparent !important;
+}
+
+/* Ensure the root React div is also transparent when this is active */
+.force-transparent #root {
+  background-color: transparent !important;
+}

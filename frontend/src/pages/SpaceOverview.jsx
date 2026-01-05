@@ -173,7 +173,13 @@ const SpaceOverview = () => {
   };
 
   const copyEmbedCode = () => {
-    const code = `<script src="${window.location.origin}/embed.js" data-space-id="${spaceId}" data-theme="${widgetSettings.theme}"></script>\n<div id="trustflow-widget"></div>`;
+    const code = `<script 
+                  src="${window.location.origin}/embed.js" data-space-id="${spaceId}" 
+                  data-theme="${widgetSettings.theme}"
+                  data-layout="${widgetSettings.layout}">
+                  </script>
+                  <div id="trustflow-widget">
+                  </div>`;
     navigator.clipboard.writeText(code);
     toast({ title: 'Embed code copied!' });
   };
@@ -528,6 +534,7 @@ const SpaceOverview = () => {
                         {`<script src="${window.location.origin}/embed.js"`}<br />
                         {`  data-space-id="${spaceId}"`}<br />
                         {`  data-theme="${widgetSettings.theme}">`}<br />
+                        {`  data-layout="${widgetSettings.layout}">`}<br /> 
                         {`</script>`}<br />
                         {`<div id="trustflow-widget"></div>`}
                       </code>
