@@ -45,6 +45,7 @@ class TestimonialPublic(BaseModel):
     rating: Optional[int] = None
     respondent_name: str
     respondent_photo_url: Optional[str] = None
+    respondent_role: Optional[str] = None
     created_at: str
 
 
@@ -74,7 +75,7 @@ async def get_public_testimonials(space_id: str):
     """Get approved testimonials for a space (for widget)"""
     try:
         response = supabase.table('testimonials') \
-            .select('id, type, content, video_url, rating, respondent_name, respondent_photo_url, created_at') \
+            .select('id, type, content, video_url, rating, respondent_name, respondent_photo_url, respondent_role, created_at') \
             .eq('space_id', space_id) \
             .eq('is_liked', True) \
             .order('created_at', desc=True) \

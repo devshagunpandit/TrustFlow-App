@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/lib/supabase';
-import { Heart, Video, FileText, Star, Loader2, CheckCircle, Camera, RotateCcw, Upload, ArrowLeft } from 'lucide-react';
+import { Heart, Video, FileText, Star, Loader2, CheckCircle, Camera, RotateCcw, Upload, ArrowLeft, User, Briefcase } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import confetti from 'canvas-confetti';
@@ -22,8 +22,14 @@ const SubmitTestimonial = () => {
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [content, setContent] = useState('');
+  
+  // Respondent Details
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [role, setRole] = useState(''); // New State for Role
+  const [avatarFile, setAvatarFile] = useState(null); // New State for Avatar
+  const [avatarPreview, setAvatarPreview] = useState(null);
+
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
@@ -73,6 +79,7 @@ const SubmitTestimonial = () => {
     }
   };
 
+  // --- Camera & Video Logic ---
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -184,6 +191,15 @@ const SubmitTestimonial = () => {
     setStep('details');
   };
 
+  // --- Avatar Handler ---
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
   const submitTestimonial = async (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) {
@@ -199,24 +215,45 @@ const SubmitTestimonial = () => {
 
     try {
       let videoUrl = null;
+      let avatarUrl = null;
+      let progress = 0;
 
-      // Upload video if exists
+      // Helper to update progress
+      const updateProgress = (increment) => {
+        progress += increment;
+        setUploadProgress(Math.min(progress, 90));
+      };
+
+      // 1. Upload Avatar if exists
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const avatarFileName = `${space.id}/avatars/${uuidv4()}.${fileExt}`;
+        
+        const { error: avatarError } = await supabase.storage
+          .from('avatars') // Ensure this bucket exists in Supabase
+          .upload(avatarFileName, avatarFile);
+
+        if (avatarError) throw avatarError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(avatarFileName);
+        
+        avatarUrl = publicUrl;
+        updateProgress(30);
+      } else {
+        updateProgress(30);
+      }
+
+      // 2. Upload Video if exists
       if (testimonialType === 'video' && recordedBlob) {
         const fileName = `${space.id}/${uuidv4()}.webm`;
         
-        // Simulate upload progress
-        const progressInterval = setInterval(() => {
-          setUploadProgress(prev => Math.min(prev + 10, 90));
-        }, 200);
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('videos')
           .upload(fileName, recordedBlob, {
             contentType: 'video/webm',
           });
-
-        clearInterval(progressInterval);
-        setUploadProgress(100);
 
         if (uploadError) throw uploadError;
 
@@ -225,9 +262,12 @@ const SubmitTestimonial = () => {
           .getPublicUrl(fileName);
         
         videoUrl = publicUrl;
+        updateProgress(40);
+      } else {
+        updateProgress(40);
       }
 
-      // Insert testimonial
+      // 3. Insert testimonial
       const { error: insertError } = await supabase
         .from('testimonials')
         .insert({
@@ -239,15 +279,17 @@ const SubmitTestimonial = () => {
           rating: space.collect_star_rating ? rating : null,
           respondent_name: name,
           respondent_email: email,
+          respondent_role: role, // Insert Role
+          respondent_photo_url: avatarUrl, // Insert Avatar URL
           is_liked: false,
           created_at: new Date().toISOString(),
         });
 
       if (insertError) throw insertError;
 
+      setUploadProgress(100);
       setStep('success');
       
-      // Confetti!
       confetti({
         particleCount: 100,
         spread: 70,
@@ -519,19 +561,22 @@ const SubmitTestimonial = () => {
 
                   <form onSubmit={submitTestimonial} className="space-y-4">
                     <div>
-                      <Label htmlFor="name">Your Name</Label>
-                      <Input
-                        id="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="John Doe"
-                        required
-                        className="mt-2"
-                      />
+                      <Label htmlFor="name">Your Name *</Label>
+                      <div className="relative mt-2">
+                        <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="John Doe"
+                          required
+                          className="pl-9"
+                        />
+                      </div>
                     </div>
 
                     <div>
-                      <Label htmlFor="email">Your Email</Label>
+                      <Label htmlFor="email">Your Email *</Label>
                       <Input
                         id="email"
                         type="email"
@@ -546,10 +591,44 @@ const SubmitTestimonial = () => {
                       </p>
                     </div>
 
+                    <div>
+                      <Label htmlFor="role">Job Title / Role (Optional)</Label>
+                      <div className="relative mt-2">
+                        <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="role"
+                          value={role}
+                          onChange={(e) => setRole(e.target.value)}
+                          placeholder="CEO at Company, Software Engineer, etc."
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="avatar">Profile Photo (Optional)</Label>
+                      <div className="mt-2 flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border">
+                          {avatarPreview ? (
+                            <img src={avatarPreview} alt="Preview" className="h-full w-full object-cover" />
+                          ) : (
+                            <User className="h-6 w-6 text-gray-400" />
+                          )}
+                        </div>
+                        <Input
+                          id="avatar"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarChange}
+                          className="flex-1 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
                     <Button 
                       type="submit"
                       disabled={submitting}
-                      className="w-full bg-gradient-to-r from-violet-600 to-indigo-600"
+                      className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 mt-4"
                     >
                       {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       Submit Testimonial
