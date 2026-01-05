@@ -451,7 +451,7 @@ const SpaceOverview = () => {
                   <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-lg max-w-sm mx-auto">
                     <div className="text-center mb-6">
                       <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl flex items-center justify-center">
-                        <Heart className="w-8 h-8 text-white" />
+                        <Star className="w-8 h-8 text-white" />
                       </div>
                       <h3 className="text-lg font-semibold">{formSettings.header_title || 'Share your experience'}</h3>
                       <p className="text-sm text-muted-foreground mt-2">{formSettings.custom_message || 'We appreciate your feedback!'}</p>
@@ -551,7 +551,7 @@ const SpaceOverview = () => {
                 <CardContent className={`min-h-[400px] rounded-lg p-6 ${widgetSettings.theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
                   {likedTestimonials.length === 0 ? (
                     <div className={`text-center py-12 ${widgetSettings.theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      <Heart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <Star className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No approved testimonials yet.</p>
                       <p className="text-sm mt-2">Click the heart icon on testimonials to approve them.</p>
                     </div>

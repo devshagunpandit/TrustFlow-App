@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { signUpWithEmail, verifySignupOtp, signInWithGoogle, signInWithGithub, supabase } from '@/lib/supabase';
-import { Heart, Github, Loader2, Mail, AlertCircle } from 'lucide-react'; 
+import { Heart, Github, Loader2, Mail, AlertCircle,Star } from 'lucide-react'; 
 import { useToast } from '@/hooks/use-toast';
 import {
   InputOTP,
@@ -226,7 +226,7 @@ const Signup = () => {
       >
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
           <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center">
-            <Heart className="w-6 h-6 text-white" />
+            <Star className="w-6 h-6 text-white" />
           </div>
           <span className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
             TrustFlow

@@ -314,7 +314,7 @@ const SubmitTestimonial = () => {
                       <img src={space.logo_url} alt={space.space_name} className="w-16 h-16 mx-auto mb-4 rounded-xl" />
                     ) : (
                       <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl flex items-center justify-center">
-                        <Heart className="w-8 h-8 text-white" />
+                        <Star className="w-8 h-8 text-white" />
                       </div>
                     )}
                     <h1 className="text-2xl font-bold mb-2">{space.header_title}</h1>

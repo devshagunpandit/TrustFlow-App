@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Heart, Plus, Settings, LogOut, MoreVertical, ExternalLink, Copy, Trash2, Loader2, Code, Layout, Palette, Eye } from 'lucide-react';
+import { Heart, Plus, Settings, LogOut, MoreVertical, ExternalLink, Copy, Trash2, Loader2, Code, Layout, Palette, Eye, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import ProfileModal from '@/components/ProfileModal';
@@ -219,7 +219,7 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link to="/dashboard" className="flex items-center gap-2">
             <div className="w-9 h-9 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center">
-              <Heart className="w-5 h-5 text-white" />
+              <Star className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
               TrustFlow
@@ -345,7 +345,7 @@ const Dashboard = () => {
             className="text-center py-20"
           >
             <div className="w-20 h-20 mx-auto mb-6 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">
-              <Heart className="w-10 h-10 text-violet-600" />
+              <Star className="w-10 h-10 text-violet-600" />
             </div>
             <h2 className="text-2xl font-semibold mb-2">No spaces yet</h2>
             <p className="text-muted-foreground mb-6">Create your first space to start collecting testimonials.</p>

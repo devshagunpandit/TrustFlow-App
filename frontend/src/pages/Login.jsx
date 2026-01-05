@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 // Direct import to bypass helpers
 import { signInWithGoogle, signInWithGithub, supabase } from '@/lib/supabase';
-import { Heart, Mail, Github, Loader2, AlertCircle, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Heart, Mail, Github, Loader2, AlertCircle, ArrowLeft, ShieldCheck, CheckCircle2, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   InputOTP,
@@ -268,7 +268,7 @@ const Login = () => {
       >
         <Link to="/" className={`flex items-center justify-center gap-2 mb-8 transition-opacity duration-500 ${isFlipped ? 'opacity-0' : 'opacity-100'}`}>
           <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center">
-            <Heart className="w-6 h-6 text-white" />
+            <Star className="w-6 h-6 text-white" />
           </div>
           <span className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
             TrustFlow
