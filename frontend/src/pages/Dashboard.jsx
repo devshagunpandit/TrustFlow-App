@@ -10,8 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-// ✅ Added Code, Layout, Palette icons
-import { Heart, Plus, Settings, LogOut, MoreVertical, ExternalLink, Copy, Trash2, Loader2, Code, Layout, Palette } from 'lucide-react';
+import { Heart, Plus, Settings, LogOut, MoreVertical, ExternalLink, Copy, Trash2, Loader2, Code, Layout, Palette, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import ProfileModal from '@/components/ProfileModal';
@@ -28,9 +27,10 @@ const Dashboard = () => {
   const [newSpaceName, setNewSpaceName] = useState('');
   const [creating, setCreating] = useState(false);
   
-  // ✅ NEW: Embed Modal State
+  // Embed Modal State
   const [embedDialogOpen, setEmbedDialogOpen] = useState(false);
-  const [selectedSlug, setSelectedSlug] = useState('');
+  // CHANGE: Storing ID now, not slug
+  const [selectedSpaceId, setSelectedSpaceId] = useState('');
   const [embedTheme, setEmbedTheme] = useState('light');
   const [embedLayout, setEmbedLayout] = useState('grid');
 
@@ -161,37 +161,37 @@ const Dashboard = () => {
     });
   };
 
-  // ✅ NEW: Embed Logic
-  const openEmbedModal = (slug) => {
-    setSelectedSlug(slug);
+  // Embed Logic
+  // CHANGE: Accepts spaceId now
+  const openEmbedModal = (spaceId) => {
+    setSelectedSpaceId(spaceId);
     setEmbedTheme('light');
     setEmbedLayout('grid');
     setEmbedDialogOpen(true);
   };
 
-  const getEmbedCode = () => {
+  const getPreviewUrl = () => {
     const origin = window.location.origin;
     const queryParams = [];
     if (embedTheme !== 'light') queryParams.push(`theme=${embedTheme}`);
     if (embedLayout !== 'grid') queryParams.push(`layout=${embedLayout}`);
     
     const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
-    const src = `${origin}/embed/${selectedSlug}${queryString}`;
+    // CHANGE: Uses selectedSpaceId
+    return `${origin}/embed/${selectedSpaceId}${queryString}`;
+  };
 
-    return `<iframe 
-  src="${src}" 
-  width="100%" 
-  height="600" 
-  frameborder="0" 
-  scrolling="yes"
-></iframe>`;
+  const getEmbedCode = () => {
+    const origin = window.location.origin;
+    // CHANGE: Uses data-space-id and selectedSpaceId
+    return `<script src="${origin}/embed.js" data-space-id="${selectedSpaceId}" data-theme="${embedTheme}" data-layout="${embedLayout}"></script>`;
   };
 
   const copyEmbedCode = () => {
     navigator.clipboard.writeText(getEmbedCode());
     toast({
       title: 'Code Copied',
-      description: 'Paste this into your HTML.',
+      description: 'Paste this into your website HTML.',
     });
   };
 
@@ -393,8 +393,9 @@ const Dashboard = () => {
                           Open form
                         </DropdownMenuItem>
                         
-                        {/* ✅ NEW: Embed Option */}
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEmbedModal(space.slug); }}>
+                        {/* Embed Option */}
+                        {/* CHANGE: Pass space.id here */}
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEmbedModal(space.id); }}>
                           <Code className="w-4 h-4 mr-2" />
                           Embed Widget
                         </DropdownMenuItem>
@@ -440,78 +441,119 @@ const Dashboard = () => {
         )}
       </main>
 
-      {/* ✅ NEW: Embed Code Dialog with Dynamic Options */}
+      {/* Embed Code Dialog */}
       <Dialog open={embedDialogOpen} onOpenChange={setEmbedDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Embed Wall of Love</DialogTitle>
-            <DialogDescription>
-              Customize your widget and copy the code to your website.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <div className="p-6 border-b">
+            <DialogHeader>
+              <DialogTitle>Embed Wall of Love</DialogTitle>
+              <DialogDescription>
+                Customize your widget and copy the code to your website.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
           
-          {/* Options Grid */}
-          <div className="grid grid-cols-2 gap-4 py-2">
-            <div className="space-y-2">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+          <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+            {/* Left Column: Settings & Code */}
+            <div className="w-full md:w-[400px] border-r p-6 overflow-y-auto space-y-6 bg-slate-50/50 dark:bg-slate-900/50">
+              
+              {/* Settings */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                     <Layout className="w-3 h-3" /> Layout
-                </Label>
-                <div className="flex gap-2">
+                  </Label>
+                  <div className="flex gap-2">
                     {['grid', 'masonry', 'carousel'].map((l) => (
-                        <button 
-                            key={l}
-                            onClick={() => setEmbedLayout(l)}
-                            className={`px-3 py-2 text-sm rounded-md border transition-all flex-1 ${
-                                embedLayout === l 
-                                ? 'bg-violet-100 border-violet-500 text-violet-700 font-medium dark:bg-violet-900/40 dark:text-violet-300' 
-                                : 'bg-transparent border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
-                            }`}
-                        >
-                            {l.charAt(0).toUpperCase() + l.slice(1)}
-                        </button>
+                      <button 
+                        key={l}
+                        onClick={() => setEmbedLayout(l)}
+                        className={`px-3 py-2 text-sm rounded-md border transition-all flex-1 ${
+                          embedLayout === l 
+                            ? 'bg-violet-100 border-violet-500 text-violet-700 font-medium dark:bg-violet-900/40 dark:text-violet-300' 
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {l.charAt(0).toUpperCase() + l.slice(1)}
+                      </button>
                     ))}
+                  </div>
                 </div>
-            </div>
 
-            <div className="space-y-2">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                     <Palette className="w-3 h-3" /> Theme
-                </Label>
-                <div className="flex gap-2">
+                  </Label>
+                  <div className="flex gap-2">
                     {['light', 'dark'].map((t) => (
-                        <button 
-                            key={t}
-                            onClick={() => setEmbedTheme(t)}
-                            className={`px-3 py-2 text-sm rounded-md border transition-all flex-1 ${
-                                embedTheme === t
-                                ? 'bg-violet-100 border-violet-500 text-violet-700 font-medium dark:bg-violet-900/40 dark:text-violet-300' 
-                                : 'bg-transparent border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
-                            }`}
-                        >
-                            {t.charAt(0).toUpperCase() + t.slice(1)}
-                        </button>
+                      <button 
+                        key={t}
+                        onClick={() => setEmbedTheme(t)}
+                        className={`px-3 py-2 text-sm rounded-md border transition-all flex-1 ${
+                          embedTheme === t
+                            ? 'bg-violet-100 border-violet-500 text-violet-700 font-medium dark:bg-violet-900/40 dark:text-violet-300' 
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                      </button>
                     ))}
+                  </div>
                 </div>
-            </div>
-          </div>
+              </div>
 
-          {/* Code Preview */}
-          <div className="mt-4 relative group">
-            <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button size="sm" variant="secondary" onClick={copyEmbedCode} className="h-8 shadow-sm">
-                    <Copy className="w-3 h-3 mr-2" /> Copy Code
-                </Button>
+              <div className="h-px bg-slate-200 dark:bg-slate-800" />
+
+              {/* Code Snippet */}
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Code className="w-3 h-3" /> Embed Code
+                </Label>
+                <div className="relative group">
+                  <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button size="sm" variant="secondary" onClick={copyEmbedCode} className="h-7 shadow-sm text-xs">
+                      <Copy className="w-3 h-3 mr-1" /> Copy
+                    </Button>
+                  </div>
+                  <pre className="bg-slate-950 text-slate-50 p-4 rounded-lg text-xs font-mono overflow-x-auto border border-slate-800 shadow-inner h-32 whitespace-pre-wrap">
+                    {getEmbedCode()}
+                  </pre>
+                </div>
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-900/50">
+                  <p className="text-xs text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
+                    <span className="text-base">💡</span> 
+                    Tip: Paste this code anywhere in your HTML. No extra setup required.
+                  </p>
+                </div>
+              </div>
             </div>
-            <pre className="bg-slate-950 text-slate-50 p-4 rounded-lg text-xs font-mono overflow-x-auto border border-slate-800 shadow-inner">
-                {getEmbedCode()}
-            </pre>
-          </div>
-          
-          <div className="mt-2 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-900/50">
-             <p className="text-xs text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
-                <span className="text-base">💡</span> 
-                Tip: You can adjust the <code>height</code> or <code>width</code> in the HTML to fit your website's container perfectly.
-             </p>
+
+            {/* Right Column: Live Preview */}
+            <div className="flex-1 bg-slate-100 dark:bg-slate-950 flex flex-col overflow-hidden relative">
+              <div className="p-3 border-b flex justify-between items-center bg-white dark:bg-slate-900">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Eye className="w-3 h-3" /> Live Preview
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  (Displaying approved & liked testimonials)
+                </div>
+              </div>
+              
+              <div className="flex-1 p-4 overflow-hidden flex items-center justify-center">
+                 {/* This iframe points to the exact same URL the user will embed. It guarantees WYSIWYG. */}
+                <div className="w-full h-full bg-white dark:bg-slate-900 rounded-lg shadow-sm border overflow-hidden">
+                  <iframe 
+                    // CHANGE: Key includes spaceId
+                    key={`${selectedSpaceId}-${embedTheme}-${embedLayout}`} 
+                    src={getPreviewUrl()}
+                    width="100%" 
+                    height="100%" 
+                    className="w-full h-full"
+                    title="Widget Preview"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

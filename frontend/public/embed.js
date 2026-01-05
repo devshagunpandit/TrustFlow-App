@@ -6,7 +6,7 @@
     var spaceId = script.getAttribute('data-space-id');
     var theme = script.getAttribute('data-theme') || 'light';
     var layout = script.getAttribute('data-layout') || 'grid';
-    
+    console.log(layout, theme, spaceId);
     // Find the widget container
     var container = document.getElementById('trustflow-widget');
     if (!container) {
@@ -19,7 +19,7 @@
     // Create iframe
     var iframe = document.createElement('iframe');
     var baseUrl = script.src.replace('/embed.js', '');
-    iframe.src = baseUrl + '/widget?spaceId=' + spaceId + '&theme=' + theme + '&layout=' + layout;
+    iframe.src = baseUrl + '/widget/' + spaceId + '?theme=' + theme + '&layout=' + layout;
     iframe.style.width = '100%';
     iframe.style.border = 'none';
     iframe.style.minHeight = '400px';

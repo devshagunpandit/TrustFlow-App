@@ -48,7 +48,7 @@ function AppRoutes() {
       <Route path="/submit/:slug" element={<SubmitTestimonial />} />
       
       {/* Widget Embed Route */}
-      <Route path="/embed/:slug" element={<WallOfLove />} />
+      <Route path="/widget/:spaceId" element={<WallOfLove />} />
       
       {/* Protected Routes */}
       <Route

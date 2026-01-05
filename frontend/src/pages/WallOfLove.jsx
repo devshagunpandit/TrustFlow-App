@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useParams } from 'react-router-dom'; // Added useParams
+import { useSearchParams, useParams } from 'react-router-dom'; 
 import { supabase } from '@/lib/supabase';
 import { Star } from 'lucide-react';
 import '@/index.css';
 
 const WallOfLove = () => {
-  const { slug } = useParams(); // Get slug from URL path (e.g. /embed/my-space)
-  const [searchParams] = useSearchParams(); // Keep this for theme/layout options
+  // CHANGE: We now capture 'spaceId' directly from the URL defined in App.js
+  const { spaceId } = useParams(); 
+  const [searchParams] = useSearchParams();
   
   const theme = searchParams.get('theme') || 'light';
   const layout = searchParams.get('layout') || 'grid';
@@ -15,28 +16,19 @@ const WallOfLove = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (slug) {
+    if (spaceId) {
       fetchTestimonials();
     }
-  }, [slug]);
+  }, [spaceId]);
 
   const fetchTestimonials = async () => {
     try {
-      // 1. First, get the Space ID using the slug
-      const { data: spaceData, error: spaceError } = await supabase
-        .from('spaces')
-        .select('id')
-        .eq('slug', slug)
-        .single();
-
-      if (spaceError) throw spaceError;
-
-      // 2. Then fetch testimonials using the found Space ID
+      // CHANGE: We skip looking up the slug. We query testimonials directly by space_id.
       const { data, error } = await supabase
         .from('testimonials')
         .select('*')
-        .eq('space_id', spaceData.id)
-        .eq('is_liked', true) // Only show "Liked" reviews in the Wall of Love
+        .eq('space_id', spaceId)
+        .eq('is_liked', true) // Only show "Liked" reviews
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -50,7 +42,7 @@ const WallOfLove = () => {
 
   if (loading) {
     return (
-      <div className={`p-8 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`min-h-screen p-8 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <div 
@@ -69,36 +61,42 @@ const WallOfLove = () => {
 
   if (testimonials.length === 0) {
     return (
-      <div className={`p-8 text-center ${theme === 'dark' ? 'bg-gray-900 text-gray-400' : 'bg-gray-50 text-gray-500'}`}>
+      <div className={`min-h-screen p-8 text-center ${theme === 'dark' ? 'bg-gray-900 text-gray-400' : 'bg-gray-50 text-gray-500'}`}>
         <p>No testimonials yet</p>
       </div>
     );
   }
 
   return (
-    <div className={`p-6 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className={`grid gap-4 ${
-        layout === 'carousel' 
-          ? 'grid-flow-col auto-cols-[300px] overflow-x-auto' 
-          : layout === 'masonry'
-          ? 'columns-1 md:columns-2 lg:columns-3 space-y-4'
-          : 'md:grid-cols-2 lg:grid-cols-3'
-      }`}>
+    <div className={`min-h-screen p-6 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`
+        ${layout === 'masonry' ? 'block' : 'grid'} 
+        gap-4 
+        ${
+          layout === 'carousel' 
+            ? 'grid-flow-col auto-cols-[300px] overflow-x-auto pb-4' 
+            : layout === 'masonry'
+            ? 'columns-1 md:columns-2 lg:columns-3 space-y-4'
+            : 'md:grid-cols-2 lg:grid-cols-3'
+        }
+      `}>
         {testimonials.map((testimonial) => (
           <div
             key={testimonial.id}
-            className={`p-6 rounded-xl shadow-sm transition-all hover:shadow-md ${
-              theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-            } ${layout === 'masonry' ? 'break-inside-avoid mb-4' : ''}`}
+            className={`
+              p-6 rounded-xl shadow-sm transition-all hover:shadow-md 
+              ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} 
+              ${layout === 'masonry' ? 'break-inside-avoid mb-4 inline-block w-full' : ''}
+            `}
           >
             {/* Rating */}
-            {testimonial.stars && ( // Changed .rating to .stars to match DB standard if needed
+            {testimonial.rating && ( 
               <div className="flex gap-0.5 mb-3">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
                     className={`w-4 h-4 ${
-                      i < testimonial.stars
+                      i < testimonial.rating
                         ? 'fill-yellow-400 text-yellow-400'
                         : 'text-gray-300'
                     }`}
@@ -129,13 +127,13 @@ const WallOfLove = () => {
                   ? 'bg-violet-900/50 text-violet-300' 
                   : 'bg-violet-100 text-violet-600'
               }`}>
-                {testimonial.name?.charAt(0).toUpperCase()}
+                {testimonial.respondent_name?.charAt(0).toUpperCase()}
               </div>
               <div>
                 <div className={`font-medium text-sm ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  {testimonial.name}
+                  {testimonial.respondent_name}
                 </div>
               </div>
             </div>
