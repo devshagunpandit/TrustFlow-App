@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,10 +16,10 @@ import { supabase } from '@/lib/supabase';
 import { 
   Heart, HeartOff, ArrowLeft, Copy, ExternalLink, Video, FileText, 
   Star, Trash2, Play, Loader2, Settings, Code, Inbox, Edit,
-  ChevronLeft, ChevronRight, Layout, Palette, BoxSelect, Sparkles, 
-  Square, Circle, MousePointerClick, Zap, Check, X,
-  Grid3X3, GalleryHorizontal, StretchHorizontal, AlignJustify,
-  Gauge, RefreshCw
+  ChevronLeft, ChevronRight, Layout, Palette, Sparkles, 
+  Square, Circle, Zap, Grid3X3, GalleryHorizontal, StretchHorizontal, AlignJustify,
+  Gauge, RefreshCw, Type, Box, Hand, Quote, MessageSquare, AlignLeft, Check, X,
+  Monitor, BadgeCheck 
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -149,10 +149,14 @@ const SpaceOverview = () => {
   // Premium Widget settings
   const [widgetSettings, setWidgetSettings] = useState({
     layout: 'grid',       // grid, masonry, carousel, list
-    theme: 'light',       // light, dark, transparent
+    theme: 'light',       // light, dark, transparent (Container Background)
+    cardTheme: 'light',   // light, dark (Card Background)
     corners: 'smooth',    // sharp, smooth, round
     shadow: 'medium',     // none, light, medium, strong
-    border: true,
+    border: true,         // true/false
+    hoverEffect: 'lift',  // none, lift, scale, glow
+    nameSize: 'medium',   // small, medium, large
+    testimonialStyle: 'clean', // clean, bubble, quote
     animation: 'fade',    // fade, slideUp, slideDown, scale, pop, flip, elastic, none
     speed: 'normal'       // slow, normal, fast
   });
@@ -190,9 +194,9 @@ const SpaceOverview = () => {
         
         setVisibleCount(safeCount);
         
-        // Exact Width Calculation
+        // Exact Width Calculation (Added buffer for side shadows)
         const exactWidth = (safeCount * CARD_WIDTH) + ((safeCount - 1) * GAP);
-        setMaskWidth(`${exactWidth}px`);
+        setMaskWidth(`${exactWidth + 8}px`);
       }
     };
 
@@ -326,10 +330,14 @@ const SpaceOverview = () => {
   src="${window.location.origin}/embed.js" 
   data-space-id="${spaceId}" 
   data-theme="${widgetSettings.theme}"
+  data-card-theme="${widgetSettings.cardTheme}"
   data-layout="${widgetSettings.layout}"
   data-corners="${widgetSettings.corners}"
   data-shadow="${widgetSettings.shadow}"
   data-border="${widgetSettings.border}"
+  data-hover-effect="${widgetSettings.hoverEffect}"
+  data-name-size="${widgetSettings.nameSize}"
+  data-testimonial-style="${widgetSettings.testimonialStyle}"
   data-animation="${widgetSettings.animation}"
   data-animation-speed="${widgetSettings.speed}">
 </script>`;
@@ -362,9 +370,20 @@ const SpaceOverview = () => {
 
   // --- Dynamic Style Generator ---
   const getPreviewCardStyles = () => {
-    const { theme, layout, corners, shadow, border } = widgetSettings;
+    const { cardTheme, layout, corners, shadow, border, hoverEffect } = widgetSettings;
     
-    let classes = 'p-6 transition-all duration-300 ';
+    // START BASE CLASSES
+    // flex flex-col ensures we can push the profile to the bottom with flex-1 on content
+    let classes = 'p-6 transition-all duration-300 flex flex-col ';
+    
+    // SIZING LOGIC:
+    // Masonry/List: h-auto allows content to dictate size.
+    // Grid/Carousel: !h-full enforces strict height equality (Wall of Blocks).
+    if (layout === 'masonry' || layout === 'list') {
+      classes += 'h-auto ';
+    } else {
+      classes += '!h-full '; // Important override
+    }
     
     // Corners
     if (corners === 'sharp') classes += 'rounded-none ';
@@ -373,12 +392,17 @@ const SpaceOverview = () => {
 
     // Shadow
     if (shadow === 'none') classes += 'shadow-none ';
-    else if (shadow === 'light') classes += 'shadow-sm hover:shadow-md ';
-    else if (shadow === 'strong') classes += 'shadow-xl hover:shadow-2xl ';
-    else classes += 'shadow-md hover:shadow-lg '; // medium
+    else if (shadow === 'light') classes += 'shadow-sm ';
+    else if (shadow === 'strong') classes += 'shadow-xl ';
+    else classes += 'shadow-md '; // medium
 
-    // Theme & Border
-    if (theme === 'dark') {
+    // Hover Effects
+    if (hoverEffect === 'lift') classes += 'hover:-translate-y-1 hover:shadow-lg ';
+    else if (hoverEffect === 'scale') classes += 'hover:scale-[1.02] hover:shadow-lg ';
+    else if (hoverEffect === 'glow') classes += 'hover:shadow-violet-500/20 hover:border-violet-300 ';
+
+    // Card Theme & Border (Now using cardTheme instead of container theme)
+    if (cardTheme === 'dark') {
       classes += 'bg-slate-900 text-slate-100 ';
       classes += border ? 'border border-slate-800 ' : 'border-0 ';
     } else {
@@ -386,7 +410,7 @@ const SpaceOverview = () => {
       classes += border ? 'border border-slate-100 ' : 'border-0 ';
     }
 
-    // Layout Specifics
+    // Layout Specifics for Width
     if (layout === 'masonry') {
       classes += 'break-inside-avoid mb-6 inline-block w-full ';
     } else if (layout === 'carousel') {
@@ -396,6 +420,14 @@ const SpaceOverview = () => {
     }
 
     return classes;
+  };
+
+  const getNameSizeClass = () => {
+    switch (widgetSettings.nameSize) {
+      case 'small': return 'text-xs';
+      case 'large': return 'text-base';
+      default: return 'text-sm';
+    }
   };
 
   // --- Animation Variants ---
@@ -746,23 +778,91 @@ const SpaceOverview = () => {
                   <div>
                     <SectionHeader icon={Palette} title="Visual Appearance" />
                     <div className="space-y-4">
-                      {/* Theme */}
+                      {/* Container Theme */}
                       <div>
-                        <Label className="text-xs text-slate-500 mb-1.5 block">Color Theme</Label>
+                        <Label className="text-xs text-slate-500 mb-1.5 block">Background Theme</Label>
                         <PremiumToggle 
                           id="theme"
                           current={widgetSettings.theme}
                           onChange={(val) => setWidgetSettings({ ...widgetSettings, theme: val })}
                           options={[
-                            { label: 'Light', value: 'light' },
-                            { label: 'Dark', value: 'dark' },
-                            { label: 'Transparent', value: 'transparent' },
+                            { label: 'Light', value: 'light', icon: Monitor },
+                            { label: 'Dark', value: 'dark', icon: Monitor },
+                            { label: 'Clear', value: 'transparent', icon: Box },
+                          ]}
+                        />
+                      </div>
+                      
+                      {/* Card Theme - NEW */}
+                      <div>
+                        <Label className="text-xs text-slate-500 mb-1.5 block">Card Theme</Label>
+                        <PremiumToggle 
+                          id="cardTheme"
+                          current={widgetSettings.cardTheme}
+                          onChange={(val) => setWidgetSettings({ ...widgetSettings, cardTheme: val })}
+                          options={[
+                            { label: 'Light', value: 'light', icon: Monitor },
+                            { label: 'Dark', value: 'dark', icon: Monitor },
                           ]}
                         />
                       </div>
 
                       {/* Card Styling Group */}
                       <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border space-y-4">
+                         {/* Typography */}
+                         <div>
+                            <Label className="text-[10px] uppercase font-bold text-slate-400 mb-2 flex items-center gap-1">
+                               <Type className="w-3 h-3" /> Name Size
+                            </Label>
+                            <PremiumToggle 
+                              id="nameSize"
+                              current={widgetSettings.nameSize}
+                              onChange={(val) => setWidgetSettings({ ...widgetSettings, nameSize: val })}
+                              options={[
+                                { label: 'Small', value: 'small' },
+                                { label: 'Normal', value: 'medium' },
+                                { label: 'Large', value: 'large' },
+                              ]}
+                            />
+                         </div>
+
+                         {/* Content Style - UPDATED */}
+                         <div>
+                            <Label className="text-[10px] uppercase font-bold text-slate-400 mb-2 flex items-center gap-1">
+                               <AlignLeft className="w-3 h-3" /> Content Style
+                            </Label>
+                            <PremiumToggle 
+                              id="testimonialStyle"
+                              current={widgetSettings.testimonialStyle}
+                              onChange={(val) => setWidgetSettings({ ...widgetSettings, testimonialStyle: val })}
+                              options={[
+                                { label: 'Clean', value: 'clean' },
+                                { label: 'Bubble', value: 'bubble', icon: MessageSquare },
+                                { label: 'Quote', value: 'quote', icon: Quote },
+                              ]}
+                            />
+                         </div>
+
+                         {/* Hover Effects */}
+                         <div>
+                            <Label className="text-[10px] uppercase font-bold text-slate-400 mb-2 flex items-center gap-1">
+                               <Hand className="w-3 h-3" /> Hover Interaction
+                            </Label>
+                            <PremiumToggle 
+                              id="hoverEffect"
+                              current={widgetSettings.hoverEffect}
+                              onChange={(val) => setWidgetSettings({ ...widgetSettings, hoverEffect: val })}
+                              options={[
+                                { label: 'None', value: 'none' },
+                                { label: 'Lift', value: 'lift' },
+                                { label: 'Scale', value: 'scale' },
+                                { label: 'Glow', value: 'glow' },
+                              ]}
+                            />
+                         </div>
+
+                         <Separator className="bg-slate-200 dark:bg-slate-800" />
+
                          {/* Corners */}
                          <div>
                             <Label className="text-[10px] uppercase font-bold text-slate-400 mb-2 block">Card Corners</Label>
@@ -902,7 +1002,7 @@ const SpaceOverview = () => {
                               <motion.div
                                 layout // Framer Motion layout prop helps smoothen grid/list changes
                                 className={`
-                                  ${isCarousel ? 'flex gap-6' : ''}
+                                  ${isCarousel ? 'flex gap-6 items-stretch py-12 px-2' : ''} /* Added py-12 px-2 for full shadow visibility */
                                   ${widgetSettings.layout === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-6' : ''}
                                   ${widgetSettings.layout === 'masonry' ? 'columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6' : ''}
                                   ${widgetSettings.layout === 'list' ? 'max-w-2xl mx-auto flex flex-col gap-4' : ''}
@@ -917,6 +1017,7 @@ const SpaceOverview = () => {
                                          initial="hidden"
                                          animate="visible"
                                          variants={getAnimationVariants()}
+                                         // FIXED: Removed 'layout' prop here to prevent height locking and ensure CSS h-full works
                                          className={getPreviewCardStyles()}
                                        >
                                           {/* Testimonial Content */}
@@ -926,19 +1027,40 @@ const SpaceOverview = () => {
                                              ))}
                                           </div>
 
-                                          {testimonial.type === 'video' && testimonial.video_url ? (
-                                             <StylishVideoPlayer videoUrl={testimonial.video_url} corners={widgetSettings.corners === 'sharp' ? 'rounded-none' : 'rounded-xl'} />
-                                          ) : (
-                                             <p className="text-sm leading-relaxed opacity-90 mb-4 line-clamp-6">{testimonial.content}</p>
-                                          )}
+                                          {/* Content Wrapper - Handles Bubble/Quote styles while keeping alignment */}
+                                          <div className="flex-1 mb-4 flex flex-col">
+                                            {testimonial.type === 'video' && testimonial.video_url ? (
+                                               <StylishVideoPlayer videoUrl={testimonial.video_url} corners={widgetSettings.corners === 'sharp' ? 'rounded-none' : 'rounded-xl'} />
+                                            ) : (
+                                               <p className={`text-sm leading-relaxed line-clamp-6 whitespace-pre-line
+                                                  ${widgetSettings.testimonialStyle === 'bubble' 
+                                                    ? (widgetSettings.cardTheme === 'dark' ? 'p-4 bg-slate-800 text-slate-200 rounded-lg relative' : 'p-4 bg-slate-100 text-slate-800 rounded-lg relative') 
+                                                    : ''}
+                                                  ${widgetSettings.testimonialStyle === 'quote' 
+                                                    ? (widgetSettings.cardTheme === 'dark' ? 'pl-4 border-l-4 border-violet-400 italic text-slate-300' : 'pl-4 border-l-4 border-violet-400 italic text-slate-600') 
+                                                    : ''}
+                                                  ${widgetSettings.testimonialStyle === 'clean' ? 'opacity-90' : ''}
+                                               `}>
+                                                  {testimonial.content}
+                                               </p>
+                                            )}
+                                          </div>
 
                                           <div className="flex items-center gap-3 pt-4 border-t border-dashed border-gray-200/10 mt-auto">
-                                             <Avatar className="w-8 h-8 border border-white/20">
-                                                <AvatarImage src={testimonial.respondent_photo_url} />
+                                             {/* AVATAR WITH ZOOM */}
+                                             <Avatar className="w-12 h-12 border border-white/20 overflow-hidden shrink-0">
+                                                <AvatarImage 
+                                                   src={testimonial.respondent_photo_url} 
+                                                   className="w-full h-full object-cover scale-110" 
+                                                />
                                                 <AvatarFallback className="bg-violet-100 text-violet-700 text-xs">{testimonial.respondent_name?.charAt(0)}</AvatarFallback>
                                              </Avatar>
                                              <div>
-                                                <div className="text-xs font-bold">{testimonial.respondent_name}</div>
+                                                <div className={`font-bold ${getNameSizeClass()} flex items-center gap-1.5`}>
+                                                   {testimonial.respondent_name}
+                                                   {/* FIXED: Solid Blue Badge with White Tick (Instagram Style) */}
+                                                   <BadgeCheck className="w-4 h-4 text-white fill-blue-500 shrink-0" />
+                                                </div>
                                                 <div className="text-[10px] opacity-70">{testimonial.respondent_role || 'Verified User'}</div>
                                              </div>
                                           </div>
