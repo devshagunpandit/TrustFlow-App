@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
   Star, Video, FileText, Loader2, Smartphone, Tablet, Laptop, 
   Palette, Type, Layout, ArrowLeft, User, CheckCircle, Camera, Upload, RotateCcw,
-  Image as ImageIcon, Link as LinkIcon, Plus, Heart, Monitor, Crown, X, Aperture, Check, AlertCircle
+  Image as ImageIcon, Link as LinkIcon, Plus, Heart, Monitor, Crown, X, Aperture, Check, AlertCircle, Trash2
 } from 'lucide-react';
 import { PremiumToggle, SectionHeader } from './SharedComponents';
 import confetti from 'canvas-confetti';
@@ -48,54 +48,46 @@ const EditFormTab = ({
   };
 
   // --- Derived State (Single Source of Truth) ---
-  // We compute the current theme directly from props to avoid circular dependency loops
-  const themeConfig = {
-    ...DEFAULT_THEME_CONFIG,
-    ...(formSettings.theme_config || {})
-  };
+  const themeConfig = formSettings.theme_config || DEFAULT_THEME_CONFIG;
 
-  // Helper to update theme config without triggering loops
+  // Helper to update theme config safely
   const updateThemeConfig = (updates) => {
     setFormSettings(prev => ({
       ...prev,
       theme_config: {
-        ...themeConfig,
+        ...(prev.theme_config || DEFAULT_THEME_CONFIG),
         ...updates
       }
     }));
   };
 
-  // Logo state (Local preview is fine, syncs on initial load)
-  const [logoMode, setLogoMode] = useState('upload'); 
+  // --- LOGO STATE MANAGEMENT ---
+  const [logoMode, setLogoMode] = useState(formSettings.logo_url ? 'upload' : 'upload'); 
   const [logoPreview, setLogoPreview] = useState(formSettings.logo_url || null);
   const [logoFile, setLogoFile] = useState(null);
+  const [imageError, setImageError] = useState(false); // To track broken links
 
-  // Sync logoPreview if DB changes (e.g. initial load)
+  // Sync logoPreview if DB changes
   useEffect(() => {
-    if (formSettings.logo_url) {
-      setLogoPreview(formSettings.logo_url);
-    }
+    setLogoPreview(formSettings.logo_url || null);
+    setImageError(false); // Reset error state on new logo
   }, [formSettings.logo_url]);
 
-  // Ensure new feature flags exist in settings with defaults
-  useEffect(() => {
-    setFormSettings(prev => ({
-      ...prev,
-      collect_video: prev.collect_video ?? true,
-      collect_photo: prev.collect_photo ?? false,
-    }));
-  }, []);
+  // Helper to check if URL is internal/blob (to hide it in input)
+  const isInternalUrl = (url) => {
+    if (!url) return false;
+    return url.includes('blob:') || url.includes('supabase') || url.includes('space_logos');
+  };
 
   // --- Interaction State for Preview ---
   const [previewStep, setPreviewStep] = useState('welcome'); 
-  const [flowMode, setFlowMode] = useState('text'); // 'video', 'photo', 'text'
+  const [flowMode, setFlowMode] = useState('text'); 
   const [mockRating, setMockRating] = useState(5);
   const [mockText, setMockText] = useState('');
   const [mockPhoto, setMockPhoto] = useState(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
 
-  // --- Animation & Error State ---
-  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'loading', 'success', 'error'
+  const [saveStatus, setSaveStatus] = useState('idle');
 
   // --- Helpers ---
 
@@ -120,8 +112,8 @@ const EditFormTab = ({
     return `w-full shadow-md bg-gradient-to-r ${accentColors[themeConfig.accentColor]} hover:opacity-90 transition-opacity text-white`;
   };
 
+  // 1. FULL RESET (Used by "Reset Default" button) - Resets Theme AND Preview
   const handleReset = () => {
-    // Reset Preview Interaction
     setPreviewStep('welcome');
     setMockText('');
     setMockRating(5);
@@ -129,22 +121,41 @@ const EditFormTab = ({
     setIsCameraOpen(false);
     setFlowMode('text');
 
-    // Reset Theme Settings to Defaults
     updateThemeConfig({
         ...DEFAULT_THEME_CONFIG,
-        viewMode: themeConfig.viewMode // Preserve the user's current view mode
+        viewMode: themeConfig.viewMode 
     });
+  };
+
+  // 2. PREVIEW RESTART (Used by "Submit Another") - Resets ONLY Preview, KEEPS Theme
+  const restartPreview = () => {
+    setPreviewStep('welcome');
+    setMockText('');
+    setMockRating(5);
+    setMockPhoto(null);
+    setIsCameraOpen(false);
+    setFlowMode('text');
+    // NOTE: We do NOT touch themeConfig here.
   };
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
+      const newUrl = URL.createObjectURL(file);
+      setLogoPreview(newUrl);
+      setImageError(false);
     }
   };
 
-  // --- SAVE HANDLER with Error Handling ---
+  const handleRemoveLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+    setFormSettings({ ...formSettings, logo_url: null });
+    setImageError(false);
+  };
+
+  // --- SAVE HANDLER ---
   const handleSave = async () => {
     setSaveStatus('loading');
     
@@ -155,10 +166,8 @@ const EditFormTab = ({
         logo_url: logoPreview 
       };
       
-      // We await the parent function. If it throws, we catch it here.
       await saveFormSettings(finalSettings, logoFile);
       
-      // Success Animation
       setSaveStatus('success');
       confetti({
         particleCount: 100,
@@ -167,83 +176,58 @@ const EditFormTab = ({
         colors: ['#8b5cf6', '#a78bfa', '#ffffff']
       });
 
-      // Reset to idle after animation
       setTimeout(() => {
         setSaveStatus('idle');
       }, 2500);
 
     } catch (error) {
-      console.error("Save failed in EditFormTab:", error);
-      
-      // Error Animation
+      console.error("Save failed:", error);
       setSaveStatus('error');
-      
-      // Reset to idle after showing error
       setTimeout(() => {
         setSaveStatus('idle');
       }, 3000);
     }
   };
 
-  // --- Flow Navigation Logic ---
-
-  const startVideoFlow = () => {
-    setFlowMode('video');
-    setPreviewStep('video');
-  };
-
-  const startPhotoFlow = () => {
-    setFlowMode('photo');
-    setPreviewStep('photo');
-  };
-
-  const startTextFlow = () => {
-    setFlowMode('text');
-    setPreviewStep('text');
-  };
+  // --- Flow Navigation ---
+  const startVideoFlow = () => { setFlowMode('video'); setPreviewStep('video'); };
+  const startPhotoFlow = () => { setFlowMode('photo'); setPreviewStep('photo'); };
+  const startTextFlow = () => { setFlowMode('text'); setPreviewStep('text'); };
 
   const handleBackFromText = () => {
-    if (flowMode === 'video') {
-      setPreviewStep('video');
-    } else if (flowMode === 'photo') {
-      setPreviewStep('photo');
-    } else {
-      setPreviewStep('welcome');
-    }
+    if (flowMode === 'video') setPreviewStep('video');
+    else if (flowMode === 'photo') setPreviewStep('photo');
+    else setPreviewStep('welcome');
   };
 
-  // Mock Camera Action
   const takeMockPhoto = () => {
     setMockPhoto('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'); 
     setIsCameraOpen(false);
   };
-
-  const closeCamera = () => {
-    setIsCameraOpen(false);
-  };
-
-  const removeMockPhoto = () => {
-    setMockPhoto(null);
-  };
+  const closeCamera = () => setIsCameraOpen(false);
+  const removeMockPhoto = () => setMockPhoto(null);
 
   const themeClasses = getThemeClasses();
 
-  // Reusable Logo Component
+  // --- Reusable Logo Component with Fallback & Fixed Color ---
   const FormLogo = () => (
     <div className="flex justify-center mb-6">
-      {logoPreview ? (
-          <img src={logoPreview} alt="Logo" className="w-16 h-16 object-contain" />
+      {logoPreview && !imageError ? (
+          <img 
+            src={logoPreview} 
+            alt="Logo" 
+            className="w-16 h-16 object-contain" 
+            onError={() => setImageError(true)} // Fallback if broken
+          />
       ) : (
-          <div  
-              style={themeConfig.accentColor === 'custom' ? { background: themeConfig.customColor } : {}}
-              className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg text-white ${themeConfig.accentColor !== 'custom' ? `bg-gradient-to-br ${accentColors[themeConfig.accentColor]}` : ''}`}>
+          // STATIC COLOR for Default Star (Ignore Accent Color)
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg text-white bg-gradient-to-br from-violet-600 to-indigo-600">
             <Star className="w-8 h-8" />
           </div>
       )}
     </div>
   );
 
-  // Helper for Premium Header
   const PremiumHeader = ({ icon: Icon, title }) => (
     <div className="flex items-center gap-2 mb-4">
       <div className={`p-2 rounded-lg bg-violet-100 dark:bg-violet-900/30`}>
@@ -273,27 +257,61 @@ const EditFormTab = ({
            {/* Logo Section */}
            <div>
             <PremiumHeader icon={ImageIcon} title="Logo & Branding" />
+            
+            <div className="flex items-center justify-between mb-4">
+               {/* Logo Preview in Control Panel */}
+               <div className="h-16 w-16 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center bg-slate-50 overflow-hidden shrink-0 relative group">
+                  {logoPreview && !imageError ? (
+                    <>
+                      <img src={logoPreview} alt="Preview" className="w-full h-full object-contain p-1" />
+                      {/* Hover Overlay for removal visual hint (optional, but button below is better) */}
+                    </>
+                  ) : (
+                    <ImageIcon className="w-6 h-6 text-slate-300" />
+                  )}
+               </div>
+
+               {/* Remove Button (Visible if logo exists) */}
+               {logoPreview && (
+                  <Button variant="ghost" size="sm" onClick={handleRemoveLogo} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-2">
+                     <Trash2 className="w-4 h-4 mr-1" /> Remove
+                  </Button>
+               )}
+            </div>
+
             <Tabs defaultValue="upload" value={logoMode} onValueChange={setLogoMode} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="upload" className="text-xs"><Upload className="w-3 h-3 mr-2" /> Upload</TabsTrigger>
                 <TabsTrigger value="url" className="text-xs"><LinkIcon className="w-3 h-3 mr-2" /> URL</TabsTrigger>
               </TabsList>
+              
               <TabsContent value="upload" className="mt-0">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center bg-slate-50 overflow-hidden shrink-0">
-                    {logoPreview ? <img src={logoPreview} alt="Logo" className="w-full h-full object-contain p-1" /> : <ImageIcon className="w-6 h-6 text-slate-300" />}
-                  </div>
                   <div className="flex-1">
                     <Label htmlFor="logo-upload" className="cursor-pointer">
-                      <div className="flex items-center justify-center w-full px-4 py-2 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 text-xs font-medium transition-colors">Choose File</div>
+                      <div className="flex items-center justify-center w-full px-4 py-2 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 text-xs font-medium transition-colors">
+                        {logoPreview ? 'Change File' : 'Choose File'}
+                      </div>
                       <Input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
                     </Label>
                     <p className="text-[10px] text-muted-foreground mt-2 leading-tight">Rec: <span className="font-medium text-slate-700">400x400px PNG</span> (Transparent).</p>
                   </div>
-                </div>
               </TabsContent>
+              
               <TabsContent value="url" className="mt-0">
-                <Input placeholder="https://..." value={logoPreview && !logoFile ? logoPreview : ''} onChange={(e) => { setLogoPreview(e.target.value); setFormSettings({...formSettings, logo_url: e.target.value}) }} className="text-xs" />
+                <Input 
+                  placeholder="https://example.com/logo.png" 
+                  // If it's an internal/blob URL, show empty to keep it clean for user input
+                  value={isInternalUrl(formSettings.logo_url) ? '' : (formSettings.logo_url || '')} 
+                  onChange={(e) => { 
+                    setLogoPreview(e.target.value); 
+                    setFormSettings({...formSettings, logo_url: e.target.value});
+                    // If user types, we assume they are overriding the file upload
+                    setLogoFile(null);
+                    setImageError(false);
+                  }} 
+                  className="text-xs" 
+                />
+                <p className="text-[10px] text-muted-foreground mt-2">Paste a direct link to your logo image.</p>
               </TabsContent>
             </Tabs>
           </div>
@@ -410,7 +428,7 @@ const EditFormTab = ({
           </div>
 
           <div className="pt-4">
-             {/* ANIMATED SAVE BUTTON WITH ERROR HANDLING */}
+             {/* ANIMATED SAVE BUTTON */}
              <Button 
                 onClick={handleSave} 
                 disabled={saveStatus !== 'idle'} 
@@ -466,6 +484,7 @@ const EditFormTab = ({
                 </button>
               ))}
            </div>
+           {/* Global Reset Button */}
            <Button variant="ghost" size="sm" onClick={handleReset} className="text-xs text-muted-foreground hover:text-red-500">
              <RotateCcw className="w-3 h-3 mr-1.5" /> Reset Default
            </Button>
@@ -486,7 +505,6 @@ const EditFormTab = ({
                ${themeConfig.viewMode === 'desktop' ? 'bg-slate-800 border-b-[20px] border-slate-700' : 'bg-slate-900 border-[8px] border-slate-900'}
              `}
              style={{ 
-               // Scaled to fit in the preview container without scrolling
                transform: themeConfig.viewMode === 'tablet' ? 'scale(0.75)' : (themeConfig.viewMode === 'desktop' ? 'scale(0.65)' : 'scale(0.9)'),
              }}
            >
@@ -509,23 +527,18 @@ const EditFormTab = ({
                                   <p className={`${themeClasses.textMuted}`}>{formSettings.custom_message || 'Your message here...'}</p>
                                 </div>
                                 <div className="space-y-3">
-                                  {/* BUTTON LOGIC: 3 Options if Both Enabled */}
-                                  
-                                  {/* 1. Video Option */}
                                   {(formSettings.collect_video ?? true) && (
                                     <Button onClick={startVideoFlow} className={`w-full h-14 text-lg ${getButtonClass()}`} style={getButtonStyle()}>
                                       <Video className="w-5 h-5 mr-2" /> Record a Video
                                     </Button>
                                   )}
 
-                                  {/* 2. Photo Option (Visible if Photo Enabled) */}
                                   {(formSettings.collect_photo) && (
                                     <Button onClick={startPhotoFlow} className={`w-full h-14 text-lg ${getButtonClass()}`} style={getButtonStyle()}>
                                       <ImageIcon className="w-5 h-5 mr-2" /> Upload Photo
                                     </Button>
                                   )}
                                   
-                                  {/* 3. Text Option (Always visible, style adapts) */}
                                   <Button 
                                     onClick={startTextFlow} 
                                     variant={(!(formSettings.collect_video ?? true) && !formSettings.collect_photo) ? "default" : "outline"}
@@ -575,23 +588,20 @@ const EditFormTab = ({
                           </motion.div>
                        )}
 
-                       {/* 2.5 PHOTO STEP (Updated with Camera Option & Back Logic) */}
+                       {/* 2.5 PHOTO STEP */}
                        {previewStep === 'photo' && (
                           <motion.div key="photo" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="w-full max-w-md">
                              <Card className={`overflow-hidden shadow-xl border-0 ${themeClasses.card}`}>
                                <CardContent className="p-6">
                                   <FormLogo />
                                   <div className="flex items-center gap-2 mb-4">
-                                    {/* Main Back Button for the Step */}
                                     <Button variant="ghost" size="icon" onClick={() => setPreviewStep('welcome')} className={themeClasses.textHeader}><ArrowLeft className="w-5 h-5" /></Button>
                                     <h2 className={`text-lg font-semibold ${themeClasses.textHeader}`}>Upload Photo</h2>
                                   </div>
                                   
                                   {isCameraOpen ? (
-                                    /* Mock Camera Interface */
                                     <div className="relative aspect-square bg-black rounded-xl overflow-hidden mb-6 flex flex-col items-center justify-end pb-6">
                                        <div className="absolute top-4 right-4 z-10">
-                                           {/* CLOSE CAMERA BUTTON */}
                                            <Button size="icon" variant="ghost" className="text-white hover:bg-white/20 rounded-full" onClick={closeCamera}>
                                                <X className="w-6 h-6" />
                                            </Button>
@@ -604,7 +614,6 @@ const EditFormTab = ({
                                        </Button>
                                     </div>
                                   ) : mockPhoto ? (
-                                    /* Photo Preview with Remove Option */
                                     <div className="relative aspect-square rounded-xl overflow-hidden mb-6 group bg-slate-100">
                                        <img src={mockPhoto} alt="Captured" className="w-full h-full object-cover" />
                                        <button onClick={removeMockPhoto} className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white p-1.5 rounded-full transition-colors">
@@ -612,7 +621,6 @@ const EditFormTab = ({
                                        </button>
                                     </div>
                                   ) : (
-                                    /* Upload / Open Camera State */
                                     <div className="grid grid-cols-2 gap-3 mb-6">
                                       <div onClick={() => setMockPhoto('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80')} className="aspect-square border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                          <Upload className="w-8 h-8 text-slate-400 mb-2" />
@@ -725,7 +733,8 @@ const EditFormTab = ({
                                     </span>
                                   </div>
                                   <div className="mt-4">
-                                    <Button variant="outline" onClick={handleReset} className={themeClasses.input}>Submit Another</Button>
+                                    {/* USE restartPreview HERE TO AVOID RESETTING THEME */}
+                                    <Button variant="outline" onClick={restartPreview} className={themeClasses.input}>Submit Another</Button>
                                   </div>
                                </CardContent>
                              </Card>

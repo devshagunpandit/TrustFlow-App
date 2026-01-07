@@ -9,8 +9,9 @@ import { supabase } from '@/lib/supabase';
 import { 
   ArrowLeft, Copy, ExternalLink, Inbox, Edit, Code, Settings, Loader2 
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { v4 as uuidv4 } from 'uuid'; // Make sure to install uuid if not already: npm install uuid
+import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
+import { v4 as uuidv4 } from 'uuid'; 
 
 // Import Sub-components
 import InboxTab from './components/InboxTab';
@@ -28,7 +29,15 @@ const SpaceOverview = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [activeTab, setActiveTab] = useState('inbox');
   const navigate = useNavigate();
-  const { toast } = useToast();
+
+  // Defined Defaults - Used for fallback merging
+  const DEFAULT_THEME_CONFIG = {
+    theme: 'light',
+    accentColor: 'violet',
+    customColor: '#8b5cf6',
+    pageBackground: 'gradient-violet',
+    viewMode: 'mobile'
+  };
 
   // Form edit state
   const [formSettings, setFormSettings] = useState({
@@ -39,12 +48,8 @@ const SpaceOverview = () => {
     collect_photo: false,
     thank_you_title: 'Thank you!',
     thank_you_message: 'Your testimonial has been submitted.',
-    theme_config: {
-      theme: 'light',
-      accentColor: 'violet',
-      pageBackground: 'gradient-violet',
-      viewMode: 'mobile'
-    }
+    theme_config: DEFAULT_THEME_CONFIG,
+    logo_url: null
   });
 
   useEffect(() => {
@@ -61,7 +66,7 @@ const SpaceOverview = () => {
 
   const fetchSpaceData = async () => {
     try {
-      // Fetch Space Core Data AND Form Settings
+      // 1. Fetch Space Data including the settings relation
       const { data: spaceData, error: spaceError } = await supabase
         .from('spaces')
         .select(`
@@ -74,27 +79,39 @@ const SpaceOverview = () => {
 
       if (spaceError) throw spaceError;
 
-      const settings = spaceData.space_form_settings?.[0] || {};
+      // 2. Robust Extraction of Settings
+      // Handle cases where relation returns an array (common) or single object
+      let fetchedSettings = {};
+      if (Array.isArray(spaceData.space_form_settings) && spaceData.space_form_settings.length > 0) {
+        fetchedSettings = spaceData.space_form_settings[0];
+      } else if (spaceData.space_form_settings && typeof spaceData.space_form_settings === 'object') {
+        fetchedSettings = spaceData.space_form_settings;
+      }
       
       setSpace(spaceData);
       
+      // 3. Deep Merge Defaults with Fetched Data
+      // This ensures that if 'viewMode' exists in DB, it is preserved.
+      // If 'theme' is missing in DB, default is used.
+      const mergedThemeConfig = {
+        ...DEFAULT_THEME_CONFIG,
+        ...(fetchedSettings.theme_config || {})
+      };
+
       setFormSettings({
-        header_title: settings.header_title || spaceData.header_title || '',
-        custom_message: settings.custom_message || spaceData.custom_message || '',
-        collect_star_rating: settings.collect_star_rating ?? true,
-        collect_video: settings.collect_video ?? true,
-        collect_photo: settings.collect_photo ?? false,
-        thank_you_title: settings.thank_you_title || 'Thank you!',
-        thank_you_message: settings.thank_you_message || 'Your testimonial has been submitted.',
-        theme_config: settings.theme_config || {
-          theme: 'light',
-          accentColor: 'violet',
-          pageBackground: 'gradient-violet',
-          viewMode: 'mobile'
-        },
+        header_title: fetchedSettings.header_title || spaceData.header_title || '',
+        custom_message: fetchedSettings.custom_message || spaceData.custom_message || '',
+        // Use ?? operator to respect 'false' values from DB
+        collect_star_rating: fetchedSettings.collect_star_rating ?? true,
+        collect_video: fetchedSettings.collect_video ?? true,
+        collect_photo: fetchedSettings.collect_photo ?? false,
+        thank_you_title: fetchedSettings.thank_you_title || 'Thank you!',
+        thank_you_message: fetchedSettings.thank_you_message || 'Your testimonial has been submitted.',
+        theme_config: mergedThemeConfig,
         logo_url: spaceData.logo_url 
       });
 
+      // 4. Fetch Testimonials
       const { data: testimonialsData, error: testimonialsError } = await supabase
         .from('testimonials')
         .select('*')
@@ -106,10 +123,8 @@ const SpaceOverview = () => {
 
     } catch (error) {
       console.error('Error fetching space:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load space data.',
-        variant: 'destructive',
+      toast.error('Unable to load space', {
+        description: 'There was a problem loading your space data. Please refresh.',
       });
       navigate('/dashboard');
     } finally {
@@ -133,7 +148,7 @@ const SpaceOverview = () => {
       setTestimonials(testimonials.map(t => 
         t.id === testimonialId ? { ...t, is_liked: currentValue } : t
       ));
-      toast({ title: 'Error', description: 'Failed to update testimonial.', variant: 'destructive' });
+      toast.error('Action Failed', { description: 'Could not update the testimonial status.' });
     }
   };
 
@@ -143,9 +158,9 @@ const SpaceOverview = () => {
       const { error } = await supabase.from('testimonials').delete().eq('id', testimonialId);
       if (error) throw error;
       setTestimonials(testimonials.filter(t => t.id !== testimonialId));
-      toast({ title: 'Testimonial deleted' });
+      toast.success('Testimonial removed');
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete testimonial.', variant: 'destructive' });
+      toast.error('Delete Failed', { description: 'Could not delete the testimonial.' });
     }
   };
 
@@ -161,7 +176,7 @@ const SpaceOverview = () => {
         const fileName = `${spaceId}/${uuidv4()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('space_logos') // Ensure this bucket exists
+          .from('space_logos') 
           .upload(fileName, logoFile);
 
         if (uploadError) throw uploadError;
@@ -174,6 +189,7 @@ const SpaceOverview = () => {
       }
 
       // 2. Separate Settings
+      // Important: logo_url belongs to 'spaces' table, others to 'space_form_settings'
       const { logo_url, ...formSpecificSettings } = settingsToSave;
 
       // 3. Update 'spaces' table (Logo is stored here)
@@ -184,7 +200,8 @@ const SpaceOverview = () => {
       
       if (spaceError) throw spaceError;
 
-      // 4. Update 'space_form_settings' table (Everything else stored here)
+      // 4. Update 'space_form_settings' table
+      // We pass the settings exactly as they are in state (including the merged theme_config)
       const { error: settingsError } = await supabase
         .from('space_form_settings')
         .upsert({ 
@@ -194,18 +211,19 @@ const SpaceOverview = () => {
 
       if (settingsError) throw settingsError;
 
-      // 5. Update Local State
+      // 5. Update Local State to reflect changes immediately
       setSpace({ ...space, logo_url: finalLogoUrl });
       setFormSettings({ ...settingsToSave, logo_url: finalLogoUrl });
       
-      toast({ title: 'Settings saved successfully!' });
+      // SILENT SUCCESS: Logic complete. Visual feedback is handled by button animation in EditFormTab.
+
     } catch (error) {
       console.error(error);
-      toast({
-        title: 'Error saving settings',
-        description: error.message,
-        variant: 'destructive',
+      toast.error('Save Failed', {
+        description: 'We could not save your changes. Please try again.',
       });
+      // Re-throw so EditFormTab knows it failed
+      throw error;
     } finally {
       setSaving(false);
     }
@@ -214,7 +232,7 @@ const SpaceOverview = () => {
   const copySubmitLink = () => {
     const link = `${window.location.origin}/submit/${space.slug}`;
     navigator.clipboard.writeText(link);
-    toast({ title: 'Link copied!' });
+    toast.success('Link copied to clipboard!');
   };
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-violet-600" /></div>;
@@ -222,6 +240,9 @@ const SpaceOverview = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+      {/* Premium Toast Provider */}
+      <Toaster richColors position="bottom-right" />
+
       {/* Header */}
       <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
