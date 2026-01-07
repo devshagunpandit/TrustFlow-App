@@ -12,9 +12,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
   Star, Video, FileText, Loader2, Smartphone, Tablet, Laptop, 
   Palette, Type, Layout, ArrowLeft, User, CheckCircle, Camera, Upload, RotateCcw,
-  Image as ImageIcon, Link as LinkIcon, Plus, Heart, Monitor, Crown, X, Aperture
+  Image as ImageIcon, Link as LinkIcon, Plus, Heart, Monitor, Crown, X, Aperture, Check, AlertCircle
 } from 'lucide-react';
 import { PremiumToggle, SectionHeader } from './SharedComponents';
+import confetti from 'canvas-confetti';
 
 const EditFormTab = ({ 
   formSettings, 
@@ -23,13 +24,12 @@ const EditFormTab = ({
   saving 
 }) => {
   // --- Constants ---
-  const INITIAL_DESIGNER_STATE = {
+  const DEFAULT_THEME_CONFIG = {
     theme: 'light', 
     accentColor: 'violet', 
     customColor: '#8b5cf6',
     pageBackground: 'gradient-violet', 
-    viewMode: 'mobile',
-    ...formSettings.theme_config // Merge in DB config
+    viewMode: 'mobile'
   };
 
   const accentColors = {
@@ -47,19 +47,35 @@ const EditFormTab = ({
     'gradient-blue': 'bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-blue-950/20 dark:via-background dark:to-cyan-950/20',
   };
 
-  // --- State ---
-  const [designerState, setDesignerState] = useState(INITIAL_DESIGNER_STATE);
+  // --- Derived State (Single Source of Truth) ---
+  // We compute the current theme directly from props to avoid circular dependency loops
+  const themeConfig = {
+    ...DEFAULT_THEME_CONFIG,
+    ...(formSettings.theme_config || {})
+  };
+
+  // Helper to update theme config without triggering loops
+  const updateThemeConfig = (updates) => {
+    setFormSettings(prev => ({
+      ...prev,
+      theme_config: {
+        ...themeConfig,
+        ...updates
+      }
+    }));
+  };
+
+  // Logo state (Local preview is fine, syncs on initial load)
   const [logoMode, setLogoMode] = useState('upload'); 
   const [logoPreview, setLogoPreview] = useState(formSettings.logo_url || null);
   const [logoFile, setLogoFile] = useState(null);
 
-  // Sync designer state back to formSettings when it changes
+  // Sync logoPreview if DB changes (e.g. initial load)
   useEffect(() => {
-    setFormSettings(prev => ({
-      ...prev,
-      theme_config: designerState
-    }));
-  }, [designerState, setFormSettings]);
+    if (formSettings.logo_url) {
+      setLogoPreview(formSettings.logo_url);
+    }
+  }, [formSettings.logo_url]);
 
   // Ensure new feature flags exist in settings with defaults
   useEffect(() => {
@@ -70,20 +86,21 @@ const EditFormTab = ({
     }));
   }, []);
 
-  // Mock Interaction State
+  // --- Interaction State for Preview ---
   const [previewStep, setPreviewStep] = useState('welcome'); 
   const [flowMode, setFlowMode] = useState('text'); // 'video', 'photo', 'text'
   const [mockRating, setMockRating] = useState(5);
   const [mockText, setMockText] = useState('');
-  
-  // Mock Photo State
   const [mockPhoto, setMockPhoto] = useState(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+  // --- Animation & Error State ---
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'loading', 'success', 'error'
 
   // --- Helpers ---
 
   const getThemeClasses = () => {
-    const isDark = designerState.theme === 'dark';
+    const isDark = themeConfig.theme === 'dark';
     return {
       card: isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-white text-slate-900',
       input: isDark ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-500',
@@ -94,22 +111,29 @@ const EditFormTab = ({
   };
 
   const getButtonStyle = () => {
-    if (designerState.accentColor === 'custom') return { background: designerState.customColor, color: '#fff' };
+    if (themeConfig.accentColor === 'custom') return { background: themeConfig.customColor, color: '#fff' };
     return {}; 
   };
   
   const getButtonClass = () => {
-    if (designerState.accentColor === 'custom') return `w-full shadow-md hover:opacity-90 transition-opacity text-white`;
-    return `w-full shadow-md bg-gradient-to-r ${accentColors[designerState.accentColor]} hover:opacity-90 transition-opacity text-white`;
+    if (themeConfig.accentColor === 'custom') return `w-full shadow-md hover:opacity-90 transition-opacity text-white`;
+    return `w-full shadow-md bg-gradient-to-r ${accentColors[themeConfig.accentColor]} hover:opacity-90 transition-opacity text-white`;
   };
 
   const handleReset = () => {
+    // Reset Preview Interaction
     setPreviewStep('welcome');
     setMockText('');
     setMockRating(5);
     setMockPhoto(null);
     setIsCameraOpen(false);
     setFlowMode('text');
+
+    // Reset Theme Settings to Defaults
+    updateThemeConfig({
+        ...DEFAULT_THEME_CONFIG,
+        viewMode: themeConfig.viewMode // Preserve the user's current view mode
+    });
   };
 
   const handleLogoUpload = (e) => {
@@ -120,13 +144,45 @@ const EditFormTab = ({
     }
   };
 
-  const handleSave = () => {
-    const finalSettings = {
-      ...formSettings,
-      theme_config: designerState,
-      logo_url: logoPreview 
-    };
-    saveFormSettings(finalSettings);
+  // --- SAVE HANDLER with Error Handling ---
+  const handleSave = async () => {
+    setSaveStatus('loading');
+    
+    try {
+      const finalSettings = {
+        ...formSettings,
+        theme_config: themeConfig,
+        logo_url: logoPreview 
+      };
+      
+      // We await the parent function. If it throws, we catch it here.
+      await saveFormSettings(finalSettings, logoFile);
+      
+      // Success Animation
+      setSaveStatus('success');
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.8 },
+        colors: ['#8b5cf6', '#a78bfa', '#ffffff']
+      });
+
+      // Reset to idle after animation
+      setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2500);
+
+    } catch (error) {
+      console.error("Save failed in EditFormTab:", error);
+      
+      // Error Animation
+      setSaveStatus('error');
+      
+      // Reset to idle after showing error
+      setTimeout(() => {
+        setSaveStatus('idle');
+      }, 3000);
+    }
   };
 
   // --- Flow Navigation Logic ---
@@ -143,21 +199,7 @@ const EditFormTab = ({
 
   const startTextFlow = () => {
     setFlowMode('text');
-    // If only Photo is enabled (and not video), text button might naturally lead to photo first 
-    // BUT user requested specific "3 buttons" behavior when both are on.
-    // Logic: If user specifically clicked "Text" when "Photo" option was available separately, go straight to text.
-    // If "Photo" wasn't available separately (hidden), then maybe text flow includes it.
-    // For simplicity and clarity based on prompt "3 options": Text goes to Text.
-    
-    // Fallback logic if buttons aren't all shown:
-    if (!formSettings.collect_video && formSettings.collect_photo) {
-        // If we are hiding buttons, we might chain them. 
-        // But with the new requirement, we try to show options. 
-        // Let's stick to direct routing for explicit buttons.
-        setPreviewStep('text'); 
-    } else {
-        setPreviewStep('text');
-    }
+    setPreviewStep('text');
   };
 
   const handleBackFromText = () => {
@@ -192,9 +234,9 @@ const EditFormTab = ({
       {logoPreview ? (
           <img src={logoPreview} alt="Logo" className="w-16 h-16 object-contain" />
       ) : (
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg text-white`} 
-              style={designerState.accentColor === 'custom' ? { background: designerState.customColor } : {}}
-              className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg text-white ${designerState.accentColor !== 'custom' ? `bg-gradient-to-br ${accentColors[designerState.accentColor]}` : ''}`}>
+          <div  
+              style={themeConfig.accentColor === 'custom' ? { background: themeConfig.customColor } : {}}
+              className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg text-white ${themeConfig.accentColor !== 'custom' ? `bg-gradient-to-br ${accentColors[themeConfig.accentColor]}` : ''}`}>
             <Star className="w-8 h-8" />
           </div>
       )}
@@ -265,18 +307,18 @@ const EditFormTab = ({
                   <Label className="text-xs text-slate-500 mb-2 block">Accent Color</Label>
                   <div className="flex flex-wrap gap-3">
                     {Object.keys(accentColors).filter(k => k !== 'custom').map(color => (
-                      <button key={color} onClick={() => setDesignerState({ ...designerState, accentColor: color })} className={`w-8 h-8 rounded-full bg-gradient-to-br ${accentColors[color]} transition-all shadow-sm ${designerState.accentColor === color ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105 hover:shadow-md'}`} />
+                      <button key={color} onClick={() => updateThemeConfig({ accentColor: color })} className={`w-8 h-8 rounded-full bg-gradient-to-br ${accentColors[color]} transition-all shadow-sm ${themeConfig.accentColor === color ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105 hover:shadow-md'}`} />
                     ))}
-                    <button onClick={() => setDesignerState({ ...designerState, accentColor: 'custom' })} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm border border-slate-200 ${designerState.accentColor === 'custom' ? 'ring-2 ring-offset-2 ring-slate-400 scale-110 bg-white' : 'bg-slate-50 hover:bg-slate-100'}`} style={designerState.accentColor === 'custom' ? { background: designerState.customColor } : {}}>
-                      {designerState.accentColor !== 'custom' && <Plus className="w-4 h-4 text-slate-400" />}
+                    <button onClick={() => updateThemeConfig({ accentColor: 'custom' })} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm border border-slate-200 ${themeConfig.accentColor === 'custom' ? 'ring-2 ring-offset-2 ring-slate-400 scale-110 bg-white' : 'bg-slate-50 hover:bg-slate-100'}`} style={themeConfig.accentColor === 'custom' ? { background: themeConfig.customColor } : {}}>
+                      {themeConfig.accentColor !== 'custom' && <Plus className="w-4 h-4 text-slate-400" />}
                     </button>
                   </div>
                   <AnimatePresence>
-                    {designerState.accentColor === 'custom' && (
+                    {themeConfig.accentColor === 'custom' && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-100 overflow-hidden">
                          <div className="flex items-center gap-3">
-                            <input type="color" value={designerState.customColor} onChange={(e) => setDesignerState({ ...designerState, customColor: e.target.value })} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent p-0" />
-                            <Input value={designerState.customColor} onChange={(e) => setDesignerState({ ...designerState, customColor: e.target.value })} className="h-8 text-xs font-mono uppercase" />
+                            <input type="color" value={themeConfig.customColor} onChange={(e) => updateThemeConfig({ customColor: e.target.value })} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent p-0" />
+                            <Input value={themeConfig.customColor} onChange={(e) => updateThemeConfig({ customColor: e.target.value })} className="h-8 text-xs font-mono uppercase" />
                          </div>
                       </motion.div>
                     )}
@@ -284,11 +326,11 @@ const EditFormTab = ({
                </div>
                <div>
                   <Label className="text-xs text-slate-500 mb-2 block">Card Theme</Label>
-                  <PremiumToggle id="theme-mode" current={designerState.theme} onChange={(val) => setDesignerState({ ...designerState, theme: val })} options={[{ label: 'Light', value: 'light' }, { label: 'Dark', value: 'dark' }]} />
+                  <PremiumToggle id="theme-mode" current={themeConfig.theme} onChange={(val) => updateThemeConfig({ theme: val })} options={[{ label: 'Light', value: 'light' }, { label: 'Dark', value: 'dark' }]} />
                </div>
                <div>
                   <Label className="text-xs text-slate-500 mb-2 block">Page Background</Label>
-                   <PremiumToggle id="bg-mode" current={designerState.pageBackground} onChange={(val) => setDesignerState({ ...designerState, pageBackground: val })} options={[{ label: 'Gradient', value: 'gradient-violet' }, { label: 'Blue', value: 'gradient-blue' }, { label: 'Clean', value: 'white' }, { label: 'Dark', value: 'dark' }]} />
+                   <PremiumToggle id="bg-mode" current={themeConfig.pageBackground} onChange={(val) => updateThemeConfig({ pageBackground: val })} options={[{ label: 'Gradient', value: 'gradient-violet' }, { label: 'Blue', value: 'gradient-blue' }, { label: 'Clean', value: 'white' }, { label: 'Dark', value: 'dark' }]} />
                </div>
             </div>
           </div>
@@ -368,10 +410,43 @@ const EditFormTab = ({
           </div>
 
           <div className="pt-4">
-            <Button onClick={handleSave} disabled={saving} className="w-full bg-slate-900 hover:bg-slate-800 text-white">
-              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save Changes
-            </Button>
+             {/* ANIMATED SAVE BUTTON WITH ERROR HANDLING */}
+             <Button 
+                onClick={handleSave} 
+                disabled={saveStatus !== 'idle'} 
+                className={`w-full text-white transition-all duration-300 relative overflow-hidden ${
+                  saveStatus === 'success' 
+                    ? 'bg-green-600 hover:bg-green-600' 
+                    : saveStatus === 'error'
+                    ? 'bg-red-600 hover:bg-red-600'
+                    : 'bg-slate-900 hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  {saveStatus === 'loading' && (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  )}
+                  {saveStatus === 'success' && (
+                     <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+                        <Check className="w-5 h-5" />
+                     </motion.div>
+                  )}
+                  {saveStatus === 'error' && (
+                     <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+                        <AlertCircle className="w-5 h-5" />
+                     </motion.div>
+                  )}
+                  {saveStatus === 'idle' && (
+                     <span>Save Changes</span>
+                  )}
+                  {saveStatus === 'success' && (
+                     <span>Saved!</span>
+                  )}
+                  {saveStatus === 'error' && (
+                     <span>Unable to Save</span>
+                  )}
+                </div>
+             </Button>
           </div>
         </CardContent>
       </Card>
@@ -386,7 +461,7 @@ const EditFormTab = ({
            </div>
            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
               {[ { id: 'mobile', icon: Smartphone }, { id: 'tablet', icon: Tablet }, { id: 'desktop', icon: Monitor } ].map((device) => (
-                <button key={device.id} onClick={() => setDesignerState({ ...designerState, viewMode: device.id })} className={`p-2 rounded-md transition-all ${designerState.viewMode === device.id ? 'bg-white dark:bg-slate-700 shadow-sm text-violet-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                <button key={device.id} onClick={() => updateThemeConfig({ viewMode: device.id })} className={`p-2 rounded-md transition-all ${themeConfig.viewMode === device.id ? 'bg-white dark:bg-slate-700 shadow-sm text-violet-600' : 'text-slate-400 hover:text-slate-600'}`}>
                   <device.icon className="w-4 h-4" />
                 </button>
               ))}
@@ -402,22 +477,22 @@ const EditFormTab = ({
              layout
              initial={false}
              animate={{ 
-               width: designerState.viewMode === 'desktop' ? '1000px' : (designerState.viewMode === 'tablet' ? '600px' : '360px'),
-               height: designerState.viewMode === 'desktop' ? '700px' : (designerState.viewMode === 'tablet' ? '800px' : '700px'),
-               borderRadius: designerState.viewMode === 'mobile' ? '40px' : (designerState.viewMode === 'tablet' ? '24px' : '12px'),
+               width: themeConfig.viewMode === 'desktop' ? '1000px' : (themeConfig.viewMode === 'tablet' ? '600px' : '360px'),
+               height: themeConfig.viewMode === 'desktop' ? '700px' : (themeConfig.viewMode === 'tablet' ? '800px' : '700px'),
+               borderRadius: themeConfig.viewMode === 'mobile' ? '40px' : (themeConfig.viewMode === 'tablet' ? '24px' : '12px'),
              }}
              transition={{ type: "spring", stiffness: 200, damping: 25 }}
              className={`relative shadow-2xl transition-all duration-500 origin-center
-               ${designerState.viewMode === 'desktop' ? 'bg-slate-800 border-b-[20px] border-slate-700' : 'bg-slate-900 border-[8px] border-slate-900'}
+               ${themeConfig.viewMode === 'desktop' ? 'bg-slate-800 border-b-[20px] border-slate-700' : 'bg-slate-900 border-[8px] border-slate-900'}
              `}
              style={{ 
                // Scaled to fit in the preview container without scrolling
-               transform: designerState.viewMode === 'tablet' ? 'scale(0.75)' : (designerState.viewMode === 'desktop' ? 'scale(0.65)' : 'scale(0.9)'),
+               transform: themeConfig.viewMode === 'tablet' ? 'scale(0.75)' : (themeConfig.viewMode === 'desktop' ? 'scale(0.65)' : 'scale(0.9)'),
              }}
            >
               {/* Screen Content */}
-              <div className={`w-full h-full overflow-y-auto overflow-x-hidden relative ${pageBackgrounds[designerState.pageBackground]}
-                  ${designerState.viewMode === 'mobile' ? 'rounded-[32px]' : (designerState.viewMode === 'tablet' ? 'rounded-[16px]' : 'rounded-t-[8px]')}
+              <div className={`w-full h-full overflow-y-auto overflow-x-hidden relative ${pageBackgrounds[themeConfig.pageBackground]}
+                  ${themeConfig.viewMode === 'mobile' ? 'rounded-[32px]' : (themeConfig.viewMode === 'tablet' ? 'rounded-[16px]' : 'rounded-t-[8px]')}
               `}>
                 {/* --- MOCK FORM START --- */}
                  <div className="min-h-full w-full flex flex-col items-center justify-center p-6">
@@ -668,7 +743,7 @@ const EditFormTab = ({
                  {/* --- MOCK FORM END --- */}
               </div>
            </motion.div>
-        </div>
+        </div> 
       </div>
     </div>
   );
