@@ -168,15 +168,20 @@ const SpaceOverview = () => {
     }
   };
 
+  // --- MODIFIED DELETE FUNCTION (Removes Toasts, Throws Error) ---
   const deleteTestimonial = async (testimonialId) => {
-    if (!window.confirm('Are you sure you want to delete this testimonial?')) return;
     try {
       const { error } = await supabase.from('testimonials').delete().eq('id', testimonialId);
       if (error) throw error;
-      setTestimonials(testimonials.filter(t => t.id !== testimonialId));
-      toast.success('Testimonial removed');
+      
+      // Update UI only after DB success
+      setTestimonials(prev => prev.filter(t => t.id !== testimonialId));
+      
+      // NOTE: Removed toast.success here as per request. Child component handles success UI.
     } catch (error) {
-      toast.error('Delete Failed', { description: 'Could not delete the testimonial.' });
+      // NOTE: Removed toast.error here. We re-throw so Child component knows it failed.
+      console.error("Delete failed in parent:", error);
+      throw error; 
     }
   };
 
