@@ -167,19 +167,22 @@ const SubmitTestimonial = () => {
     return `w-full shadow-md bg-gradient-to-r ${accentColors[accentColor]} hover:opacity-90 transition-opacity text-white`;
   };
 
-  // --- Flows ---
+  // --- Flows (Updated: Clear errors when starting a flow) ---
   const startVideoFlow = () => {
+    setSubmissionError(null); // Clear previous errors
     setTestimonialType('video');
     setStep('video');
     setTimeout(startCamera, 100);
   };
 
   const startPhotoFlow = () => {
+    setSubmissionError(null); // Clear previous errors
     setTestimonialType('photo');
     setStep('photo');
   };
 
   const startTextFlow = () => {
+    setSubmissionError(null); // Clear previous errors
     setTestimonialType('text');
     setStep('text');
   };
@@ -229,6 +232,7 @@ const SubmitTestimonial = () => {
   };
 
   const startRecording = () => {
+    setSubmissionError(null); // Clear error when action starts
     if (!streamRef.current) return;
     const mediaRecorder = new MediaRecorder(streamRef.current, { mimeType: 'video/webm;codecs=vp9' });
     const chunks = [];
@@ -286,11 +290,13 @@ const SubmitTestimonial = () => {
     setRecordedBlob(null);
     setRecordedUrl(null);
     setRecordingTime(0);
+    setSubmissionError(null); // Clear error on retake
     startCamera();
   };
 
   // --- Photo Logic (Multi-Image) ---
   const handlePhotoUpload = (e) => {
+    setSubmissionError(null); // Clear error when action starts
     try {
       const files = Array.from(e.target.files);
       if (files.length + attachedImages.length > 4) {
@@ -311,6 +317,7 @@ const SubmitTestimonial = () => {
   };
 
   const startPhotoCamera = async () => {
+    setSubmissionError(null); // Clear error when action starts
     try {
       setIsPhotoCameraOpen(true);
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
@@ -575,13 +582,13 @@ const SubmitTestimonial = () => {
             </motion.div>
           )}
 
-          {/* STEP 2: VIDEO */}
+          {/* STEP 2: VIDEO (Updated Back Button) */}
           {step === 'video' && (
             <motion.div key="video" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <Card className={`overflow-hidden shadow-xl border-0 ${themeClasses.card}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-4">
-                    <Button variant="ghost" size="icon" onClick={() => { stopCamera(); setStep('welcome'); }} className={themeClasses.textHeader}><ArrowLeft className="w-5 h-5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => { stopCamera(); setStep('welcome'); setSubmissionError(null); }} className={themeClasses.textHeader}><ArrowLeft className="w-5 h-5" /></Button>
                     <h2 className={`text-lg font-semibold ${themeClasses.textHeader}`}>Record Video</h2>
                   </div>
                   <div className="relative aspect-[9/16] max-h-[400px] bg-black rounded-xl overflow-hidden mb-4">
@@ -608,13 +615,13 @@ const SubmitTestimonial = () => {
             </motion.div>
           )}
 
-          {/* STEP 3: PHOTO (Multi-Select + Camera) */}
+          {/* STEP 3: PHOTO (Updated Back Button) */}
           {step === 'photo' && (
             <motion.div key="photo" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <Card className={`overflow-hidden shadow-xl border-0 ${themeClasses.card}`}>
                 <CardContent className="p-6">
                    <div className="flex items-center gap-2 mb-4">
-                      <Button variant="ghost" size="icon" onClick={() => setStep('welcome')} className={themeClasses.textHeader}><ArrowLeft className="w-5 h-5" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => { setStep('welcome'); setSubmissionError(null); }} className={themeClasses.textHeader}><ArrowLeft className="w-5 h-5" /></Button>
                       <h2 className={`text-lg font-semibold ${themeClasses.textHeader}`}>Upload Photos</h2>
                    </div>
 
@@ -669,13 +676,13 @@ const SubmitTestimonial = () => {
             </motion.div>
           )}
 
-          {/* STEP 4: TEXT (With Skip Logic) */}
+          {/* STEP 4: TEXT (Updated Back Button & OnChange) */}
           {step === 'text' && (
             <motion.div key="text" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <Card className={`overflow-hidden shadow-xl border-0 ${themeClasses.card}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-4">
-                    <Button variant="ghost" size="icon" onClick={() => setStep(testimonialType === 'photo' ? 'photo' : (testimonialType === 'video' ? 'video' : 'welcome'))} className={themeClasses.textHeader}><ArrowLeft className="w-5 h-5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => { setSubmissionError(null); setStep(testimonialType === 'photo' ? 'photo' : (testimonialType === 'video' ? 'video' : 'welcome')); }} className={themeClasses.textHeader}><ArrowLeft className="w-5 h-5" /></Button>
                     <h2 className={`text-lg font-semibold ${themeClasses.textHeader}`}>Write Testimonial</h2>
                   </div>
                   {formSettings.collect_star_rating && (
@@ -686,7 +693,7 @@ const SubmitTestimonial = () => {
                   )}
                   <div className="space-y-4">
                     <Label htmlFor="content" className={themeClasses.textHeader}>Your Testimonial</Label>
-                    <Textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Share your experience..." rows={5} className={`mt-2 ${themeClasses.input}`} />
+                    <Textarea id="content" value={content} onChange={(e) => { setContent(e.target.value); setSubmissionError(null); }} placeholder="Share your experience..." rows={5} className={`mt-2 ${themeClasses.input}`} />
                     
                     {submissionError && <div className="text-red-500 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {submissionError}</div>}
 

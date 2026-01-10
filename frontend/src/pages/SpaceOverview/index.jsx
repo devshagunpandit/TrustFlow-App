@@ -148,6 +148,11 @@ const SpaceOverview = () => {
     }
   };
 
+  // --- PARENT HELPER: UPDATE SPACE STATE FROM CHILDREN ---
+  const updateSpaceState = (newSpaceData) => {
+    setSpace(prev => ({ ...prev, ...newSpaceData }));
+  };
+
   const toggleLike = async (testimonialId, currentValue) => {
     setTestimonials(testimonials.map(t => 
       t.id === testimonialId ? { ...t, is_liked: !currentValue } : t
@@ -168,20 +173,31 @@ const SpaceOverview = () => {
     }
   };
 
-  // --- MODIFIED DELETE FUNCTION (Removes Toasts, Throws Error) ---
+  // --- DELETE TESTIMONIAL ---
   const deleteTestimonial = async (testimonialId) => {
     try {
       const { error } = await supabase.from('testimonials').delete().eq('id', testimonialId);
       if (error) throw error;
-      
-      // Update UI only after DB success
       setTestimonials(prev => prev.filter(t => t.id !== testimonialId));
-      
-      // NOTE: Removed toast.success here as per request. Child component handles success UI.
     } catch (error) {
-      // NOTE: Removed toast.error here. We re-throw so Child component knows it failed.
       console.error("Delete failed in parent:", error);
       throw error; 
+    }
+  };
+
+  // --- DELETE SPACE FUNCTION ---
+  const deleteSpace = async () => {
+    try {
+      const { error } = await supabase
+        .from('spaces')
+        .delete()
+        .eq('id', spaceId);
+      
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error("Delete Space failed:", error);
+      throw error;
     }
   };
 
@@ -224,7 +240,6 @@ const SpaceOverview = () => {
 
   // --- SAVE LOGIC: WIDGET ---
   const saveWidgetSettings = async (settingsToSave) => {
-    // This function mimics the behavior of saveFormSettings but for the widget
     try {
       const { error } = await supabase
         .from('widget_configurations')
@@ -234,14 +249,11 @@ const SpaceOverview = () => {
         }, { onConflict: 'space_id' });
 
       if (error) throw error;
-      
-      // Update local state is handled by the WidgetTab calling setWidgetSettings,
-      // but we ensure it's synced here if needed.
       setWidgetSettings(settingsToSave);
       
     } catch (error) {
       console.error('Error saving widget settings:', error);
-      throw error; // Throw so the child component can show the error state
+      throw error; 
     }
   };
 
@@ -316,7 +328,6 @@ const SpaceOverview = () => {
             />
           </TabsContent>
 
-          {/* PASSING PROPS TO WIDGET TAB */}
           <TabsContent value="widget" className="mt-0">
             <WidgetTab 
               testimonials={testimonials} 
@@ -329,7 +340,15 @@ const SpaceOverview = () => {
           </TabsContent>
 
           <TabsContent value="settings">
-            <SettingsTab space={space} spaceId={spaceId} navigate={navigate} copySubmitLink={copySubmitLink} />
+            <SettingsTab 
+              space={space} 
+              spaceId={spaceId} 
+              navigate={navigate} 
+              copySubmitLink={copySubmitLink}
+              deleteSpace={deleteSpace}
+              updateSpaceState={updateSpaceState}
+              userEmail={user?.email} 
+            />
           </TabsContent>
         </Tabs>
       </main>
