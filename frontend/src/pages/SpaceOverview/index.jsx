@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { 
-  ArrowLeft, Copy, ExternalLink, Inbox, Edit, Code, Settings, Loader2 
+  ArrowLeft, Copy, ExternalLink, Inbox, Edit, Code, Settings, Loader2, Share2 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
@@ -17,6 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 import InboxTab from './components/InboxTab';
 import EditFormTab from './components/EditFormTab';
 import WidgetTab from './components/WidgetTab';
+import ShareTab from './components/ShareTab';
 import SettingsTab from './components/SettingsTab';
 
 const SpaceOverview = () => {
@@ -309,6 +310,10 @@ const SpaceOverview = () => {
               <Code className="w-4 h-4" />
               Widget
             </TabsTrigger>
+            <TabsTrigger value="share" className="flex items-center gap-2">
+             <Share2 className="w-4 h-4" />
+              Share & QR
+             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
               Settings
@@ -338,7 +343,9 @@ const SpaceOverview = () => {
               saveWidgetSettings={saveWidgetSettings}
             />
           </TabsContent>
-
+          <TabsContent value="share" className="mt-0">
+            <ShareTab space={space} />
+          </TabsContent>
           <TabsContent value="settings">
             <SettingsTab 
               space={space} 
