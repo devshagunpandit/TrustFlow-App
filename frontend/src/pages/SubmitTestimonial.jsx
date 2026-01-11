@@ -728,7 +728,6 @@ const SubmitTestimonial = () => {
 
                   <form onSubmit={submitTestimonial} className="space-y-5">
                     {/* Profile Photo */}
-                    {formSettings.collect_photo && (
                        <div className="flex flex-col items-center justify-center mb-6">
                           <div className="relative group">
                             <Label htmlFor="avatar-upload" className="cursor-pointer">
@@ -749,8 +748,6 @@ const SubmitTestimonial = () => {
                             )}
                           </div>
                        </div>
-                    )}
-
                     <div>
                       <Label htmlFor="name" className={themeClasses.textHeader}>Your Name *</Label>
                       <div className="relative mt-2">
