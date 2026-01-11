@@ -14,11 +14,11 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # Supabase connection
-supabase_url = os.environ.get('REACT_APP_SUPABASE_URL')
-supabase_key = os.environ.get('REACT_APP_SUPABASE_ANON_KEY')
+supabase_url = os.environ.get('SUPABASE_URL')
+supabase_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
 
 if not supabase_url or not supabase_key:
-    raise ValueError("Missing REACT_APP_SUPABASE_URL or REACT_APP_SUPABASE_ANON_KEY")
+    raise ValueError("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
 
 supabase: Client = create_client(supabase_url, supabase_key)
 
