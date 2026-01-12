@@ -16,8 +16,9 @@
             // Haan: To turant chalu karo (Next.js/React Hydrated)
             setTimeout(initEngine, 2000);
         } else {
-            // Nahi: To 'load' event ka wait karo (Standard HTML/Loading phase)
-            window.addEventListener('load', initEngine);
+            window.addEventListener('load', function() {
+                setTimeout(initEngine, 2000);
+            });
         }
     }
 
