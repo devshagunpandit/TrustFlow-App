@@ -259,7 +259,7 @@ async def resolve_custom_domain(domain: str):
         response = supabase.table('custom_domains') \
             .select('*, spaces(id, slug, space_name, logo_url, header_title, custom_message, collect_star_rating)') \
             .eq('domain', domain.lower().strip()) \
-            .eq('status', 'verified') \
+            .eq('status', 'active') \
             .execute()
         
         if response.data and len(response.data) > 0:
