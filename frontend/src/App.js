@@ -61,6 +61,7 @@ const CustomDomainHandler = () => {
         
         if (data.status === 'success' && data.space) {
           setSpaceData(data.space);
+          updateBranding(data.space);
         } else {
           setError('Domain not configured');
         }
@@ -74,6 +75,23 @@ const CustomDomainHandler = () => {
     
     resolveCustomDomain();
   }, [API_BASE]);
+
+  
+  const updateBranding = (space) => {
+    if (space.header_title || space.space_name) {
+       document.title = space.header_title || space.space_name;
+    }
+    if (space.logo_url) {
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = space.logo_url;
+    }
+  };
+
 
   if (loading) {
     return (
