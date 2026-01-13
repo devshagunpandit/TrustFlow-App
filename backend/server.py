@@ -231,6 +231,38 @@ async def setup_database():
 
 
 # --- CUSTOM DOMAIN ROUTES (Pro Feature) ---
+@api_router.get("/custom-domains/resolve")
+async def resolve_custom_domain(domain: str):
+    """Resolve a custom domain to its space - used by frontend for custom domain routing"""
+    try:
+        # Lookup domain in custom_domains table
+        response = supabase.table('custom_domains') \
+            .select('*, spaces(id, slug, space_name, logo_url, header_title, custom_message, collect_star_rating)') \
+            .eq('domain', domain.lower().strip()) \
+            .eq('status', 'active') \
+            .execute()
+        
+        if response.data and len(response.data) > 0:
+            domain_data = response.data[0]
+            space_data = domain_data.get('spaces')
+            
+            if space_data:
+                return {
+                    "status": "success",
+                    "space": space_data,
+                    "domain": {
+                        "id": domain_data['id'],
+                        "domain": domain_data['domain'],
+                        "status": domain_data['status']
+                    }
+                }
+        
+        # Domain not found or not verified
+        return {"status": "error", "message": "Domain not configured or not verified", "space": None}
+    
+    except Exception as e:
+        logger.error(f"Error resolving custom domain: {e}")
+        return {"status": "error", "message": "Failed to resolve domain", "space": None}
 
 @api_router.get("/custom-domains/{space_id}")
 async def get_custom_domain(space_id: str):
@@ -251,50 +283,7 @@ async def get_custom_domain(space_id: str):
         raise HTTPException(status_code=500, detail="Failed to fetch custom domain")
 
 
-@api_router.get("/custom-domains/resolve")
-async def resolve_custom_domain(domain: str):
-    """Resolve a custom domain (NO JOIN VERSION - 100% Safe)"""
-    try:
-        clean_domain = domain.lower().strip()
-        logger.info(f"Looking up domain: {clean_domain}")
 
-        # --- STEP 1: Pehle sirf Domain dhoondo (Koi Join nahi) ---
-        # Note: Humne .single() use kiya hai taaki list na mile
-        domain_response = supabase.table('custom_domains') \
-            .select('*') \
-            .eq('domain', clean_domain) \
-            .eq('status', 'active') \
-            .execute()
-        
-        # Check agar domain mila ya nahi
-        if not domain_response.data or len(domain_response.data) == 0:
-            logger.warning(f"Domain not found: {clean_domain}")
-            return {"status": "error", "message": "Domain not active", "space": None}
-
-        # Data nikal lo
-        domain_record = domain_response.data[0]
-        space_id = domain_record['space_id']
-
-        # --- STEP 2: Ab us ID se Space dhoondo ---
-        space_response = supabase.table('spaces') \
-            .select('id, slug, space_name, logo_url, header_title, custom_message, collect_star_rating') \
-            .eq('id', space_id) \
-            .execute()
-
-        if not space_response.data:
-            return {"status": "error", "message": "Space not found", "space": None}
-
-        # --- Success! Dono data merge karke return karo ---
-        return {
-            "status": "success",
-            "space": space_response.data[0],
-            "domain": domain_record
-        }
-    
-    except Exception as e:
-        # Error ko print karo taaki humein dikhe
-        logger.error(f"API ERROR: {e}")
-        return {"status": "error", "message": str(e), "space": None}
 
 @api_router.post("/custom-domains")
 async def add_custom_domain(data: CustomDomainCreate):
