@@ -17,8 +17,9 @@ import ForgotPassword from "./pages/ForgotPassword";
 const KNOWN_DOMAINS = [
   'localhost',
   '127.0.0.1',
-  'trustflow.app',
+  'trustflow-nu.vercel.app',
   'www.trustflow.app',
+  'trust-flow-app.vercel.app',
   'proofwalls.preview.emergentagent.com',
 ];
 
@@ -38,12 +39,22 @@ const CustomDomainHandler = () => {
   const [loading, setLoading] = useState(true);
   const [spaceData, setSpaceData] = useState(null);
   const [error, setError] = useState(null);
-  const API_BASE = process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  
+  // ✅ FIX: LIVE BACKEND URL (Hardcoded for stability on custom domains)
+  const API_BASE = "https://trust-flow-app.vercel.app";
 
   useEffect(() => {
     const resolveCustomDomain = async () => {
       try {
-        const hostname = window.location.hostname;
+        let hostname = window.location.hostname;
+        
+        // ✅ FIX: Remove 'www.' if present so DB match works
+        if (hostname.startsWith('www.')) {
+            hostname = hostname.substring(4);
+        }
+
+        console.log('Resolving custom domain for hostname:', hostname);
+        
         // Call API to resolve custom domain
         const res = await fetch(`${API_BASE}/api/custom-domains/resolve?domain=${hostname}`);
         const data = await res.json();
@@ -76,6 +87,7 @@ const CustomDomainHandler = () => {
   }
 
   if (error || !spaceData) {
+    console.log('Error or no space data:', error, spaceData);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center p-8">
