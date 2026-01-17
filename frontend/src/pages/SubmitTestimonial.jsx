@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/lib/supabase';
 import { 
   Video, FileText, Star, Loader2, CheckCircle, Camera, RotateCcw, 
-  Upload, ArrowLeft, User, Briefcase, Trash2, Image as ImageIcon, AlertCircle, AlertTriangle, Plus, X
+  Upload, ArrowLeft, User, Briefcase, Trash2, Image as ImageIcon, AlertCircle, AlertTriangle, Plus, X, ExternalLink
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import confetti from 'canvas-confetti';
@@ -105,6 +105,7 @@ const SubmitTestimonial = ({ customSlug }) => {
 
   const fetchSpace = async () => {
     try {
+      console.log('DEBUG: Fetching space data for slug:', slug);
       const { data, error } = await supabase
         .from('spaces')
         .select(`*, space_form_settings (*)`)
@@ -119,6 +120,8 @@ const SubmitTestimonial = ({ customSlug }) => {
       } else if (data.space_form_settings && typeof data.space_form_settings === 'object') {
         fetchedSettings = data.space_form_settings;
       }
+      
+      console.log('DEBUG: Fetched extra_settings:', fetchedSettings?.extra_settings);
 
       const mergedSettings = {
         header_title: fetchedSettings.header_title || data.header_title || '',
@@ -131,7 +134,9 @@ const SubmitTestimonial = ({ customSlug }) => {
         theme_config: {
           ...DEFAULT_THEME_CONFIG,
           ...(fetchedSettings.theme_config || {})
-        }
+        },
+        // NEW: Fetch extra_settings for branding and thank you redirect
+        extra_settings: fetchedSettings.extra_settings || {}
       };
 
       setSpace(data);
@@ -819,6 +824,21 @@ const SubmitTestimonial = ({ customSlug }) => {
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.2 }}><CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" /></motion.div>
                   <h2 className={`text-2xl font-bold mb-2 ${themeClasses.textHeader}`}>{formSettings.thank_you_title}</h2>
                   <p className={`mb-6 ${themeClasses.textMuted}`}>{formSettings.thank_you_message}</p>
+                  
+                  {/* Custom Thank You Redirect Button */}
+                  {formSettings.extra_settings?.thank_you_url && (
+                    <a 
+                      href={formSettings.extra_settings.thank_you_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all mb-4 ${getButtonClass()}`}
+                      style={getButtonStyle()}
+                    >
+                      {formSettings.extra_settings?.thank_you_link_text || 'Continue'}
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
+                  
                   <div className="p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
                     <p className="text-sm text-slate-700 dark:text-slate-300">Want to collect testimonials like this?</p>
                     <a href="/" target="_blank" rel="noopener noreferrer" className="text-violet-600 font-medium hover:underline">Create your own Wall of Love →</a>
@@ -829,9 +849,13 @@ const SubmitTestimonial = ({ customSlug }) => {
           )}
 
         </AnimatePresence>
-        <div className="text-center mt-6">
-          <a href="/" target="_blank" rel="noopener noreferrer" className={`text-sm hover:underline transition-colors ${themeClasses.textMuted}`}>Powered by <span className="font-medium text-violet-600">TrustFlow</span></a>
-        </div>
+        
+        {/* Footer - Respects hide_branding */}
+        {!formSettings.extra_settings?.hide_branding && (
+          <div className="text-center mt-6">
+            <a href="/" target="_blank" rel="noopener noreferrer" className={`text-sm hover:underline transition-colors ${themeClasses.textMuted}`}>Powered by <span className="font-medium text-violet-600">TrustFlow</span></a>
+          </div>
+        )}
       </motion.div>
     </div>
   );

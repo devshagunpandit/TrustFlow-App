@@ -55,6 +55,12 @@ const SpaceOverview = () => {
     popupDuration: 5,  // seconds display time
     popupGap: 10,      // seconds between popups
     popupMessage: 'Someone just shared love!',
+    // New Settings for Tasks
+    smoothContinuousScroll: false,  // Marquee-style infinite scroll
+    smoothScrollSpeed: 30,          // Pixels per second for smooth scroll
+    showBranding: true,             // Show "Powered by TrustFlow" badge
+    seeMoreButtonText: 'See More',  // See More button text
+    seeMoreButtonLink: '#',         // See More button redirect URL
   };
 
   // --- STATE ---
@@ -67,7 +73,8 @@ const SpaceOverview = () => {
     thank_you_title: 'Thank you!',
     thank_you_message: 'Your testimonial has been submitted.',
     theme_config: DEFAULT_THEME_CONFIG,
-    logo_url: null
+    logo_url: null,
+    extra_settings: {} // NEW: JSONB column for pro settings
   });
 
   const [widgetSettings, setWidgetSettings] = useState(DEFAULT_WIDGET_SETTINGS);
@@ -118,9 +125,12 @@ const SpaceOverview = () => {
         thank_you_title: fetchedFormSettings.thank_you_title || 'Thank you!',
         thank_you_message: fetchedFormSettings.thank_you_message || 'Your testimonial has been submitted.',
         theme_config: { ...DEFAULT_THEME_CONFIG, ...(fetchedFormSettings.theme_config || {}) },
-        logo_url: spaceData.logo_url 
+        // Change yahan hai: Pehle settings table ka logo, nahi to space table ka
+        logo_url: fetchedFormSettings.logo_url || spaceData.logo_url,
+        // NEW: Fetch extra_settings JSONB
+        extra_settings: fetchedFormSettings.extra_settings || {}
       });
-
+      console.log('DEBUG: Fetched form settings with extra_settings:', fetchedFormSettings.extra_settings);
       // Handle Widget Settings
       let fetchedWidgetSettings = {};
       if (Array.isArray(spaceData.widget_configurations) && spaceData.widget_configurations.length > 0) {
@@ -208,6 +218,8 @@ const SpaceOverview = () => {
   const saveFormSettings = async (settingsToSave = formSettings, logoFile = null) => {
     setSaving(true);
     try {
+      console.log('DEBUG: Saving form settings:', settingsToSave);
+      
       let finalLogoUrl = settingsToSave.logo_url;
 
       if (logoFile) {
@@ -223,14 +235,32 @@ const SpaceOverview = () => {
 
       await supabase.from('spaces').update({ logo_url: finalLogoUrl }).eq('id', spaceId);
       
+      // Fetch existing extra_settings first to merge, not overwrite
+      const { data: existingData } = await supabase
+        .from('space_form_settings')
+        .select('extra_settings')
+        .eq('space_id', spaceId)
+        .single();
+      
+      const mergedExtraSettings = {
+        ...(existingData?.extra_settings || {}),
+        ...(formSpecificSettings.extra_settings || {})
+      };
+      
+      console.log('DEBUG: Merged extra_settings:', mergedExtraSettings);
+      
       const { error: settingsError } = await supabase
         .from('space_form_settings')
-        .upsert({ space_id: spaceId, ...formSpecificSettings }, { onConflict: 'space_id' });
+        .upsert({ 
+          space_id: spaceId, 
+          ...formSpecificSettings,
+          extra_settings: mergedExtraSettings 
+        }, { onConflict: 'space_id' });
 
       if (settingsError) throw settingsError;
 
       setSpace({ ...space, logo_url: finalLogoUrl });
-      setFormSettings({ ...settingsToSave, logo_url: finalLogoUrl });
+      setFormSettings({ ...settingsToSave, logo_url: finalLogoUrl, extra_settings: mergedExtraSettings });
 
     } catch (error) {
       console.error(error);
@@ -367,7 +397,7 @@ const SpaceOverview = () => {
             </TabsContent>
 
             <TabsContent value="share" className="mt-0">
-              <ShareTab space={space} />
+             <ShareTab space={{ ...space, ...formSettings }} />
             </TabsContent>
 
             <TabsContent value="widget" className="mt-0">

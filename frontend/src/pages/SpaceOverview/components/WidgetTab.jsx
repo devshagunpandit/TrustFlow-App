@@ -13,10 +13,29 @@ import {
   Palette, Type, MessageSquare, Quote, Hand, Square, Circle, AlignLeft,
   Check, X, Sparkles, RefreshCw, Gauge, ChevronLeft, ChevronRight, Star, BadgeCheck,
   Smartphone, Tablet, Laptop, Save, RotateCcw, Shuffle, Heading,
-  Maximize2, Minimize2, Layers, Info, Loader2, AlertCircle, ChevronDown, CheckCircle, AlertTriangle, Bell, Clock, MapPin
+  Maximize2, Minimize2, Layers, Info, Loader2, AlertCircle, ChevronDown, CheckCircle, AlertTriangle, Bell, Clock, MapPin,
+  ExternalLink, Crown, Link as LinkIcon
 } from 'lucide-react';
 import { StylishVideoPlayer, PremiumToggle, SectionHeader, CARD_WIDTH, GAP, PADDING_X } from './SharedComponents';
 import confetti from 'canvas-confetti';
+
+// --- CSS for Smooth Continuous Scroll Animation ---
+const smoothScrollPreviewStyles = `
+  @keyframes smoothMarqueePreview {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .smooth-scroll-preview-container {
+    display: flex;
+    width: max-content;
+    animation-name: smoothMarqueePreview;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+  .smooth-scroll-preview-container:hover {
+    animation-play-state: paused;
+  }
+`;
 
 // --- Premium Fonts List ---
 const PREMIUM_FONTS = [
@@ -526,7 +545,10 @@ const WidgetTab = ({
                         </div>
                     ) : (
                         <>
-                        {isCarousel && (
+                        {/* Inject smooth scroll styles */}
+                        <style>{smoothScrollPreviewStyles}</style>
+                        
+                        {isCarousel && !widgetSettings.smoothContinuousScroll && (
                             <>
                             <button onClick={handlePrev} className="absolute left-4 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:scale-110 transition-all"><ChevronLeft className="w-5 h-5 text-slate-700" /></button>
                             <button onClick={handleNext} className="absolute right-4 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:scale-110 transition-all"><ChevronRight className="w-5 h-5 text-slate-700" /></button>
@@ -534,10 +556,106 @@ const WidgetTab = ({
                         )}
 
                         <div 
-                            key={`${widgetSettings.layout}-${widgetSettings.cardSize}`} 
-                            className="relative mx-auto transition-all duration-300"
+                            key={`${widgetSettings.layout}-${widgetSettings.cardSize}-${widgetSettings.smoothContinuousScroll}`} 
+                            className="relative mx-auto transition-all duration-300 overflow-hidden"
                             style={isCarousel ? { width: maskWidth, overflow: 'hidden' } : { width: '100%', maxWidth: '1200px' }}
                         >
+                            {/* Smooth Continuous Scroll Mode for Preview */}
+                            {widgetSettings.smoothContinuousScroll && (widgetSettings.layout === 'carousel' || widgetSettings.layout === 'grid') ? (
+                                <div 
+                                    className="smooth-scroll-preview-container py-4 px-2"
+                                    style={{ 
+                                        animationDuration: `${(displayedTestimonials.length * (getCardWidthPx() + GAP)) / (widgetSettings.smoothScrollSpeed || 30)}s`,
+                                    }}
+                                >
+                                    {/* Original items */}
+                                    {displayedTestimonials.map((testimonial, i) => (
+                                        <div
+                                            key={`orig-${testimonial.id}-${i}`}
+                                            className={`${getPreviewCardStyles(i)} flex-shrink-0 mx-3`}
+                                            style={{ width: `${getCardWidthPx()}px` }}
+                                        >
+                                            <div className="flex items-center gap-1 mb-3">
+                                                {[...Array(testimonial.rating || 5)].map((_, idx) => (
+                                                    <Star key={idx} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                                ))}
+                                            </div>
+                                            <div className="flex-1 mb-4">
+                                                <p className={`text-sm leading-relaxed line-clamp-6 whitespace-pre-line
+                                                    ${widgetSettings.testimonialStyle === 'bubble' 
+                                                        ? (widgetSettings.cardTheme === 'dark' ? 'p-4 bg-slate-800 text-slate-200 rounded-lg' : 'p-4 bg-slate-100 text-slate-800 rounded-lg') 
+                                                        : ''}
+                                                    ${widgetSettings.testimonialStyle === 'quote' 
+                                                        ? (widgetSettings.cardTheme === 'dark' ? 'pl-4 border-l-4 border-violet-400 italic text-slate-300' : 'pl-4 border-l-4 border-violet-400 italic text-slate-600') 
+                                                        : ''}
+                                                    ${widgetSettings.testimonialStyle === 'clean' ? 'opacity-90' : ''}
+                                                `}>
+                                                    {testimonial.content}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3 pt-4 border-t border-dashed border-gray-200/10 mt-auto">
+                                                <Avatar className="w-12 h-12 border border-white/20 overflow-hidden shrink-0">
+                                                    <AvatarImage src={testimonial.respondent_photo_url} className="w-full h-full object-cover scale-110" />
+                                                    <AvatarFallback className="bg-violet-100 text-violet-700 text-xs">{testimonial.respondent_name?.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <div className={`font-bold ${getNameSizeClass()} flex items-center gap-1.5`}>
+                                                        {testimonial.respondent_name}
+                                                        <BadgeCheck className="w-4 h-4 text-white fill-blue-500 shrink-0" />
+                                                    </div>
+                                                    <div className="text-[10px] opacity-70">{testimonial.respondent_role || 'Verified User'}</div>
+                                                </div>
+                                            </div>
+                                            {widgetSettings.showBranding !== false && (
+                                                <div className="absolute bottom-2 right-2">
+                                                    <span className={`text-[8px] px-1.5 py-0.5 rounded ${widgetSettings.cardTheme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                                                        ⚡ TrustFlow
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                    {/* Cloned items for seamless loop */}
+                                    {displayedTestimonials.map((testimonial, i) => (
+                                        <div
+                                            key={`clone-${testimonial.id}-${i}`}
+                                            className={`${getPreviewCardStyles(i)} flex-shrink-0 mx-3`}
+                                            style={{ width: `${getCardWidthPx()}px` }}
+                                        >
+                                            <div className="flex items-center gap-1 mb-3">
+                                                {[...Array(testimonial.rating || 5)].map((_, idx) => (
+                                                    <Star key={idx} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                                ))}
+                                            </div>
+                                            <div className="flex-1 mb-4">
+                                                <p className={`text-sm leading-relaxed line-clamp-6 whitespace-pre-line ${widgetSettings.testimonialStyle === 'clean' ? 'opacity-90' : ''}`}>
+                                                    {testimonial.content}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3 pt-4 border-t border-dashed border-gray-200/10 mt-auto">
+                                                <Avatar className="w-12 h-12 border border-white/20 overflow-hidden shrink-0">
+                                                    <AvatarImage src={testimonial.respondent_photo_url} className="w-full h-full object-cover scale-110" />
+                                                    <AvatarFallback className="bg-violet-100 text-violet-700 text-xs">{testimonial.respondent_name?.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <div className={`font-bold ${getNameSizeClass()} flex items-center gap-1.5`}>
+                                                        {testimonial.respondent_name}
+                                                        <BadgeCheck className="w-4 h-4 text-white fill-blue-500 shrink-0" />
+                                                    </div>
+                                                    <div className="text-[10px] opacity-70">{testimonial.respondent_role || 'Verified User'}</div>
+                                                </div>
+                                            </div>
+                                            {widgetSettings.showBranding !== false && (
+                                                <div className="absolute bottom-2 right-2">
+                                                    <span className={`text-[8px] px-1.5 py-0.5 rounded ${widgetSettings.cardTheme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                                                        ⚡ TrustFlow
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
                             <motion.div
                                 layout 
                                 className={`
@@ -614,11 +732,21 @@ const WidgetTab = ({
                                                         <div className="text-[10px] opacity-70">{testimonial.respondent_role || 'Verified User'}</div>
                                                     </div>
                                                 </div>
+                                                
+                                                {/* Powered by TrustFlow Badge */}
+                                                {widgetSettings.showBranding !== false && (
+                                                    <div className="absolute bottom-2 right-2">
+                                                        <span className={`text-[8px] px-1.5 py-0.5 rounded ${widgetSettings.cardTheme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                                                            ⚡ TrustFlow
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </motion.div>
                                         );
                                     })}
                                 </AnimatePresence>
                             </motion.div>
+                            )}
                         </div>
                         </>
                     )}
@@ -1140,18 +1268,83 @@ const WidgetTab = ({
             </div>
             
             <div className="space-y-6">
+               {/* Smooth Continuous Scroll - NEW */}
+               <div className="bg-gradient-to-br from-violet-50 to-indigo-50 p-4 rounded-xl border border-violet-100 relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-2 opacity-10"><Sparkles className="w-12 h-12 text-violet-500" /></div>
+                   <div className="relative z-10 space-y-4">
+                       <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                                    <RefreshCw className="w-3 h-3" /> Smooth Continuous Scroll
+                                </Label>
+                                <p className="text-[10px] text-slate-500">Marquee-style infinite loop animation</p>
+                            </div>
+                            
+                            {(widgetSettings.layout === 'carousel' || widgetSettings.layout === 'grid') ? (
+                                <ToggleSwitch 
+                                    isOn={widgetSettings.smoothContinuousScroll} 
+                                    onToggle={() => {
+                                        console.log('DEBUG: Toggling smooth continuous scroll');
+                                        // Mutually exclusive with autoScroll
+                                        setWidgetSettings({
+                                            ...widgetSettings, 
+                                            smoothContinuousScroll: !widgetSettings.smoothContinuousScroll,
+                                            autoScroll: !widgetSettings.smoothContinuousScroll ? false : widgetSettings.autoScroll
+                                        });
+                                    }}
+                                />
+                            ) : (
+                                <Badge variant="outline" className="text-[10px] border-slate-300 text-slate-500">Carousel/Grid Only</Badge>
+                            )}
+                       </div>
+                       
+                       {widgetSettings.smoothContinuousScroll && (widgetSettings.layout === 'carousel' || widgetSettings.layout === 'grid') && (
+                           <motion.div 
+                               initial={{ opacity: 0, height: 0 }} 
+                               animate={{ opacity: 1, height: 'auto' }} 
+                               className="pt-3 border-t border-violet-200/50"
+                           >
+                               <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+                                   <span>Slow</span>
+                                   <span className="font-mono text-violet-600">{widgetSettings.smoothScrollSpeed || 30}px/s</span>
+                                   <span>Fast</span>
+                               </div>
+                               <Slider 
+                                   value={[widgetSettings.smoothScrollSpeed || 30]} min={10} max={100} step={5}
+                                   onValueChange={(val) => setWidgetSettings({...widgetSettings, smoothScrollSpeed: val[0]})}
+                                   className="py-2"
+                               />
+                           </motion.div>
+                       )}
+                   </div>
+               </div>
+
                <div className="bg-slate-900 text-slate-100 p-4 rounded-xl relative overflow-hidden">
                    <div className="absolute top-0 right-0 p-2 opacity-10"><Sparkles className="w-12 h-12 text-white" /></div>
                    <div className="relative z-10 space-y-4">
                        <div className="flex items-center justify-between">
                             <Label className="text-xs font-bold text-slate-300 flex items-center gap-2">
-                                <RotateCcw className="w-3 h-3" /> Auto-Scroll
+                                <RotateCcw className="w-3 h-3" /> Auto-Scroll (Carousel)
                             </Label>
                             
                             {isCarousel ? (
                                 <div className="flex items-center bg-slate-800 rounded-full p-0.5">
-                                   <button onClick={() => setWidgetSettings({ ...widgetSettings, autoScroll: false })} className={`px-3 py-1 rounded-full text-[10px] transition-all ${!widgetSettings.autoScroll ? 'bg-slate-700 text-white' : 'text-slate-500'}`}>Off</button>
-                                   <button onClick={() => setWidgetSettings({ ...widgetSettings, autoScroll: true })} className={`px-3 py-1 rounded-full text-[10px] transition-all ${widgetSettings.autoScroll ? 'bg-violet-600 text-white' : 'text-slate-500'}`}>On</button>
+                                   <button 
+                                       onClick={() => setWidgetSettings({ ...widgetSettings, autoScroll: false })} 
+                                       className={`px-3 py-1 rounded-full text-[10px] transition-all ${!widgetSettings.autoScroll ? 'bg-slate-700 text-white' : 'text-slate-500'}`}
+                                   >Off</button>
+                                   <button 
+                                       onClick={() => {
+                                           console.log('DEBUG: Enabling autoScroll, disabling smoothContinuousScroll');
+                                           // Mutually exclusive with smoothContinuousScroll
+                                           setWidgetSettings({ 
+                                               ...widgetSettings, 
+                                               autoScroll: true, 
+                                               smoothContinuousScroll: false 
+                                           });
+                                       }} 
+                                       className={`px-3 py-1 rounded-full text-[10px] transition-all ${widgetSettings.autoScroll ? 'bg-violet-600 text-white' : 'text-slate-500'}`}
+                                   >On</button>
                                 </div>
                             ) : (
                                 <Badge variant="outline" className="text-[10px] border-slate-700 text-slate-500">Carousel Only</Badge>
@@ -1195,27 +1388,6 @@ const WidgetTab = ({
                </div>
 
                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-xs text-slate-500 block">Entrance Animation</Label>
-                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setReplayTrigger(prev => prev+1)}><RefreshCw className="w-3 h-3" /></Button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                     {['fade', 'slideUp', 'slideDown', 'scale', 'pop', 'flip', 'elastic', 'none'].map((anim) => (
-                       <Button
-                         key={anim}
-                         variant={widgetSettings.animation === anim ? "default" : "outline"}
-                         size="sm"
-                         onClick={() => setWidgetSettings({ ...widgetSettings, animation: anim })}
-                         className={`justify-start capitalize text-xs h-8 ${widgetSettings.animation === anim ? 'bg-violet-600 hover:bg-violet-700' : ''}`}
-                       >
-                         {widgetSettings.animation === anim && <Sparkles className="w-3 h-3 mr-2 text-violet-200" />}
-                         {anim.replace(/([A-Z])/g, ' $1').trim()}
-                       </Button>
-                     ))}
-                  </div>
-               </div>
-               
-               <div>
                   <Label className="text-xs text-slate-500 mb-1.5 block">Animation Speed</Label>
                   <PremiumToggle 
                      id="speed"
@@ -1229,6 +1401,68 @@ const WidgetTab = ({
                   />
                </div>
             </div>
+          </div>
+
+          <Separator className="bg-slate-100" />
+
+          {/* 6. Branding Control - NEW PRO FEATURE */}
+          <div className="space-y-4">
+             <div className="flex items-center justify-between mb-2">
+                <SectionHeader icon={Crown} title="Branding" />
+                <Badge className="text-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-0 shadow-sm flex items-center gap-1 px-2 py-0.5">
+                   <Star className="w-2.5 h-2.5 fill-current" /> PRO
+                </Badge>
+             </div>
+             
+             <div className={`p-4 rounded-xl border transition-all duration-300 ${!widgetSettings.showBranding ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
+                 <div className="flex items-center justify-between">
+                     <div className="space-y-0.5">
+                         <Label className="text-sm font-semibold text-slate-800">Remove Branding (Pro)</Label>
+                         <p className="text-[10px] text-slate-500">Hide "Powered by TrustFlow" badge</p>
+                     </div>
+                     <ToggleSwitch 
+                        isOn={!widgetSettings.showBranding} 
+                        onToggle={() => {
+                            console.log('DEBUG: Toggling branding visibility');
+                            setWidgetSettings({...widgetSettings, showBranding: !widgetSettings.showBranding});
+                        }}
+                     />
+                 </div>
+             </div>
+          </div>
+
+          <Separator className="bg-slate-100" />
+
+          {/* 7. See More Button - NEW */}
+          <div className="space-y-4">
+             <SectionHeader icon={ExternalLink} title="See More Button" />
+             
+             <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-4">
+                 <div className="space-y-2">
+                     <Label className="text-xs text-slate-500">Button Text</Label>
+                     <Input 
+                        value={widgetSettings.seeMoreButtonText || 'See More'} 
+                        onChange={(e) => setWidgetSettings({...widgetSettings, seeMoreButtonText: e.target.value})}
+                        className="h-8 text-xs bg-white"
+                        placeholder="See More"
+                     />
+                 </div>
+                 <div className="space-y-2">
+                     <Label className="text-xs text-slate-500 flex items-center gap-1">
+                         <LinkIcon className="w-3 h-3" /> Redirect Link
+                     </Label>
+                     <Input 
+                        value={widgetSettings.seeMoreButtonLink || '#'} 
+                        onChange={(e) => {
+                            console.log('DEBUG: See More Link updated to:', e.target.value);
+                            setWidgetSettings({...widgetSettings, seeMoreButtonLink: e.target.value});
+                        }}
+                        className="h-8 text-xs bg-white"
+                        placeholder="https://example.com/testimonials"
+                     />
+                     <p className="text-[10px] text-slate-400">Where users go when they click the button on Wall of Love</p>
+                 </div>
+             </div>
           </div>
 
         </CardContent>

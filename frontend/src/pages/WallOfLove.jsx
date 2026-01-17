@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom'; 
 import { supabase } from '@/lib/supabase';
-import { Star, Play, ChevronLeft, ChevronRight, BadgeCheck, Loader2 } from 'lucide-react'; 
+import { Star, Play, ChevronLeft, ChevronRight, BadgeCheck, Loader2, ExternalLink } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion'; 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import '@/index.css';
@@ -9,6 +9,37 @@ import '@/index.css';
 const CARD_WIDTH = 300; 
 const GAP = 24; 
 const PADDING_X = 32; 
+
+// --- CSS for Smooth Continuous Scroll Animation ---
+const smoothScrollStyles = `
+  @keyframes smoothMarquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .smooth-scroll-container {
+    display: flex;
+    width: max-content;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+  .smooth-scroll-container:hover {
+    animation-play-state: paused;
+  }
+  /* Mobile Masonry Fix */
+  @media (max-width: 767px) {
+    .mobile-masonry-card {
+      transform: scale(0.95);
+      font-size: 0.95em;
+    }
+    .mobile-masonry-container {
+      columns: 1 !important;
+      padding: 8px !important;
+    }
+    .mobile-masonry-container .mobile-masonry-card {
+      margin-bottom: 12px;
+    }
+  }
+`; 
 
 // --- 1. ERROR BOUNDARY ---
 class WidgetErrorBoundary extends React.Component {
@@ -121,7 +152,13 @@ const WallOfLoveContent = ({ customSpaceId }) => {
     maxCount: 12,
     shuffle: false,
     autoScroll: false,
-    scrollSpeed: 3
+    scrollSpeed: 3,
+    // New settings
+    smoothContinuousScroll: false,
+    smoothScrollSpeed: 30,
+    showBranding: true,
+    seeMoreButtonText: 'See More',
+    seeMoreButtonLink: '#'
   });
 
   // --- 1. SUPER FAST TRANSPARENCY ---
@@ -439,6 +476,19 @@ const WallOfLoveContent = ({ customSpaceId }) => {
     setExpandedRect(null);
     setIsPaused(false); 
   };
+  
+  // Calculate smooth scroll duration based on content width and speed
+  // MOVED BEFORE EARLY RETURNS to comply with Rules of Hooks
+  const smoothScrollDuration = useMemo(() => {
+    try {
+      const totalWidth = displayedTestimonials.length * (CARD_WIDTH + GAP);
+      const speed = settings.smoothScrollSpeed || 30;
+      return totalWidth / speed;
+    } catch (e) {
+      console.log('DEBUG: Error calculating smooth scroll duration', e);
+      return 30;
+    }
+  }, [displayedTestimonials.length, settings.smoothScrollSpeed]);
 
   // --- RENDER ---
   if (loading) return <div className="min-h-[200px] flex items-center justify-center bg-transparent"><Loader2 className="w-6 h-6 animate-spin text-gray-400"/></div>;
@@ -446,7 +496,7 @@ const WallOfLoveContent = ({ customSpaceId }) => {
 
   const isCarousel = settings.layout === 'carousel';
   const bubbleBgClass = settings.cardTheme === 'dark' ? 'bg-slate-800' : 'bg-slate-100';
-  const shouldAnimate = !settings.autoScroll; 
+  const shouldAnimate = !settings.autoScroll && !settings.smoothContinuousScroll; 
 
   // --- CARD CONTENT GENERATOR ---
   const renderCardContent = (testimonial, index, forOverlay = false) => {
@@ -503,6 +553,15 @@ const WallOfLoveContent = ({ customSpaceId }) => {
                     </div>
                 </div>
             </div>
+            
+            {/* Powered by TrustFlow Badge */}
+            {settings.showBranding !== false && (
+                <div className="absolute bottom-2 right-2">
+                    <span className={`text-[8px] px-1.5 py-0.5 rounded ${settings.cardTheme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                        ⚡ TrustFlow
+                    </span>
+                </div>
+            )}
         </>
       );
   }
@@ -515,12 +574,15 @@ const WallOfLoveContent = ({ customSpaceId }) => {
       animate={{ opacity: 1 }} 
       transition={{ duration: 0.3 }}
       ref={outerContainerRef} 
-      className="w-full relative group font-sans py-12" 
+      className="w-full relative group font-sans py-12 overflow-x-hidden" 
       style={{ minHeight: '100px' }}
       // GLOBAL PAUSE HANDLER for entire area
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
+      {/* Inject smooth scroll styles */}
+      <style>{smoothScrollStyles}</style>
+      
       {(settings.showHeading || settings.showSubheading) && (
         <div className="text-center mb-6 space-y-1 px-4">
              {settings.showHeading && (
@@ -536,7 +598,7 @@ const WallOfLoveContent = ({ customSpaceId }) => {
         </div>
       )}
 
-      {isCarousel && testimonials.length > visibleCount && (
+      {isCarousel && testimonials.length > visibleCount && !settings.smoothContinuousScroll && (
         <div className="hidden sm:block">
           <button onClick={handlePrev} className="absolute left-0 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full bg-white/90 dark:bg-black/90 shadow-lg border border-gray-200 dark:border-gray-800 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center hover:scale-110 text-gray-700 dark:text-gray-200" style={{marginLeft: '2px'}}>
             <ChevronLeft className="h-5 w-5" />
@@ -549,61 +611,117 @@ const WallOfLoveContent = ({ customSpaceId }) => {
 
       {/* LIST CONTAINER */}
       <div 
-        className="relative mx-auto transition-[width] duration-300 ease-in-out"
+        className="relative mx-auto transition-[width] duration-300 ease-in-out overflow-hidden"
         style={isCarousel ? { width: maskWidth, overflow: 'hidden' } : { width: '100%' }}
       >
-        <motion.div 
-          ref={carouselConstraintsRef}
-          className={`
-            ${isCarousel ? `flex gap-4 sm:gap-6 py-8 sm:py-12 px-5 sm:px-6 cursor-grab active:cursor-grabbing ${settings.carouselSameSize ? 'items-stretch' : 'items-start'}` : ''} 
-            ${settings.layout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-2 sm:p-4' : ''}
-            ${settings.layout === 'masonry' ? 'block columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6 p-2 sm:p-4' : ''}
-            ${settings.layout === 'list' ? 'max-w-2xl mx-auto flex flex-col gap-4 p-2 sm:p-4' : ''}
-          `}
-          drag={isCarousel ? "x" : false}
-          dragConstraints={isCarousel ? { right: 0, left: -((testimonials.length * (300 + 24)) - maskWidth) } : false} 
-          animate={isCarousel ? { x: -(carouselIndex * (getCardWidthPx() + GAP)) } : {}}
-          transition={isSnapping ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
-        >
-          {/* Base Cards Render */}
-          {(isCarousel ? carouselItems : displayedTestimonials).map((testimonial, i) => {
-                let isFocused = false;
-                if (isCarousel && settings.carouselFocusZoom) {
-                    const relativeIndex = i - carouselIndex;
-                    const centerOffset = Math.floor(visibleCount / 2);
-                    if (relativeIndex === centerOffset) isFocused = true;
-                }
-                const variants = getAnimationVariants();
-                const isOverflowing = overflowingCards.has(`${testimonial.id}-${i}`);
-                
-                return (
-                  <motion.div
-                    key={`${testimonial.id}-${i}`}
-                    custom={i}
-                    layoutId={`card-${i}`} // Sync ID with overlay
-                    initial={shouldAnimate ? "hidden" : "visible"}
-                    whileInView="visible"
-                    viewport={{ once: true, margin: "-10%" }} 
-                    variants={variants}
-                    animate={isFocused ? { scale: 1.05, opacity: 1, zIndex: 10 } : undefined}
-                    className={`relative group/card ${settings.carouselSameSize && !isCarousel ? 'h-full' : ''} ${settings.layout === 'masonry' ? 'mb-6 h-auto' : ''} ${isOverflowing ? 'cursor-zoom-in' : ''}`}
-                    
-                    // Trigger Expansion & Pause
-                    onMouseEnter={(e) => handleMouseEnter(e, i, isOverflowing)}
-                    onMouseLeave={handleMouseLeave}
-                    onClick={(e) => handleMobileClick(e, i, isOverflowing)}
-                    
-                    // Hide base card when expanded
-                    style={{ opacity: expandedId === i ? 0 : 1 }}
-                  >
-                    <div className={getCardStyles(false)}>
-                        {renderCardContent(testimonial, i, false)}
-                    </div>
-                  </motion.div>
-                );
-            })}
-        </motion.div>
+        {/* Smooth Continuous Scroll Mode */}
+        {settings.smoothContinuousScroll && (settings.layout === 'carousel' || settings.layout === 'grid') ? (
+          <div 
+            className="smooth-scroll-container"
+            style={{ 
+              animationName: 'smoothMarquee',
+              animationDuration: `${smoothScrollDuration}s`,
+              animationPlayState: isPaused ? 'paused' : 'running'
+            }}
+          >
+            {/* Original items */}
+            {displayedTestimonials.map((testimonial, i) => (
+              <div
+                key={`orig-${testimonial.id}-${i}`}
+                className={`relative flex-shrink-0 mx-3`}
+                style={{ width: `${CARD_WIDTH}px` }}
+              >
+                <div className={`${getCardStyles(false)} relative`}>
+                  {renderCardContent(testimonial, i, false)}
+                </div>
+              </div>
+            ))}
+            {/* Cloned items for seamless loop */}
+            {displayedTestimonials.map((testimonial, i) => (
+              <div
+                key={`clone-${testimonial.id}-${i}`}
+                className={`relative flex-shrink-0 mx-3`}
+                style={{ width: `${CARD_WIDTH}px` }}
+              >
+                <div className={`${getCardStyles(false)} relative`}>
+                  {renderCardContent(testimonial, i, false)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <motion.div 
+            ref={carouselConstraintsRef}
+            className={`
+              ${isCarousel ? `flex gap-4 sm:gap-6 py-8 sm:py-12 px-5 sm:px-6 cursor-grab active:cursor-grabbing ${settings.carouselSameSize ? 'items-stretch' : 'items-start'}` : ''} 
+              ${settings.layout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-2 sm:p-4' : ''}
+              ${settings.layout === 'masonry' ? 'block columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6 p-2 sm:p-4 mobile-masonry-container' : ''}
+              ${settings.layout === 'list' ? 'max-w-2xl mx-auto flex flex-col gap-4 p-2 sm:p-4' : ''}
+            `}
+            drag={isCarousel ? "x" : false}
+            dragConstraints={isCarousel ? { right: 0, left: -((testimonials.length * (300 + 24)) - maskWidth) } : false} 
+            animate={isCarousel ? { x: -(carouselIndex * (getCardWidthPx() + GAP)) } : {}}
+            transition={isSnapping ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
+          >
+            {/* Base Cards Render */}
+            {(isCarousel ? carouselItems : displayedTestimonials).map((testimonial, i) => {
+                  let isFocused = false;
+                  if (isCarousel && settings.carouselFocusZoom) {
+                      const relativeIndex = i - carouselIndex;
+                      const centerOffset = Math.floor(visibleCount / 2);
+                      if (relativeIndex === centerOffset) isFocused = true;
+                  }
+                  const variants = getAnimationVariants();
+                  const isOverflowing = overflowingCards.has(`${testimonial.id}-${i}`);
+                  
+                  return (
+                    <motion.div
+                      key={`${testimonial.id}-${i}`}
+                      custom={i}
+                      layoutId={`card-${i}`} // Sync ID with overlay
+                      initial={shouldAnimate ? "hidden" : "visible"}
+                      whileInView="visible"
+                      viewport={{ once: true, margin: "-10%" }} 
+                      variants={variants}
+                      animate={isFocused ? { scale: 1.05, opacity: 1, zIndex: 10 } : undefined}
+                      className={`relative group/card mobile-masonry-card ${settings.carouselSameSize && !isCarousel ? 'h-full' : ''} ${settings.layout === 'masonry' ? 'mb-6 h-auto' : ''} ${isOverflowing ? 'cursor-zoom-in' : ''}`}
+                      
+                      // Trigger Expansion & Pause
+                      onMouseEnter={(e) => handleMouseEnter(e, i, isOverflowing)}
+                      onMouseLeave={handleMouseLeave}
+                      onClick={(e) => handleMobileClick(e, i, isOverflowing)}
+                      
+                      // Hide base card when expanded
+                      style={{ opacity: expandedId === i ? 0 : 1 }}
+                    >
+                      <div className={`${getCardStyles(false)} relative`}>
+                          {renderCardContent(testimonial, i, false)}
+                      </div>
+                    </motion.div>
+                  );
+              })}
+          </motion.div>
+        )}
       </div>
+
+      {/* See More Button */}
+      {settings.seeMoreButtonText && settings.seeMoreButtonLink && settings.seeMoreButtonLink !== '#' && (
+        <div className="flex justify-center mt-8">
+          <a 
+            href={settings.seeMoreButtonLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all hover:scale-105 shadow-lg ${
+              settings.cardTheme === 'dark' 
+                ? 'bg-white text-slate-900 hover:bg-slate-100' 
+                : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:opacity-90'
+            }`}
+          >
+            {settings.seeMoreButtonText}
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
+      )}
 
       {/* OVERLAY PORTAL FOR EXPANDED CARD */}
       <AnimatePresence>
@@ -619,7 +737,7 @@ const WallOfLoveContent = ({ customSpaceId }) => {
                     // FIX NO 1: Key ensures React destroys old overlay and creates new one for clean switch
                     key={expandedId}
                     layoutId={`card-${expandedId}`} 
-                    className={getCardStyles(true)}
+                    className={`${getCardStyles(true)} relative`}
                     onMouseEnter={() => setIsPaused(true)}
                     style={{
                         position: 'fixed',

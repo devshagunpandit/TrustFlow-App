@@ -12,7 +12,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
   Star, Video, FileText, Loader2, Smartphone, Tablet, Laptop, 
   Palette, Type, Layout, ArrowLeft, User, CheckCircle, Camera, Upload, RotateCcw,
-  Image as ImageIcon, Link as LinkIcon, Plus, Heart, Monitor, Crown, X, Aperture, Check, AlertCircle, Trash2
+  Image as ImageIcon, Link as LinkIcon, Plus, Heart, Monitor, Crown, X, Aperture, Check, AlertCircle, Trash2,
+  ExternalLink
 } from 'lucide-react';
 import { PremiumToggle, SectionHeader } from './SharedComponents';
 import confetti from 'canvas-confetti';
@@ -524,10 +525,12 @@ const EditFormTab = ({
 
                     </AnimatePresence>
                     
-                    {/* FOOTER */}
-                    <div className="text-center mt-6">
-                      <p className={`text-sm ${themeClasses.textMuted}`}>Powered by <span className="font-medium text-violet-600">TrustFlow</span></p>
-                    </div>
+                    {/* FOOTER - Respects hide_branding */}
+                    {!formSettings.extra_settings?.hide_branding && (
+                      <div className="text-center mt-6">
+                        <p className={`text-sm ${themeClasses.textMuted}`}>Powered by <span className="font-medium text-violet-600">TrustFlow</span></p>
+                      </div>
+                    )}
 
                  </div>
                  {/* --- MOCK FORM END --- */}
@@ -685,6 +688,92 @@ const EditFormTab = ({
                   rows={2} 
                   className="bg-slate-50 resize-none" 
                 />
+              </div>
+            </div>
+          </div>
+          <Separator />
+          
+          {/* PRO SETTINGS - Custom Thank You Page & Branding */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+               <SectionHeader icon={Crown} title="Pro Settings" />
+               <Badge className="text-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-0 shadow-sm flex items-center gap-1 px-2 py-0.5">
+                  <Star className="w-2.5 h-2.5 fill-current" /> PRO
+               </Badge>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Custom Thank You Page Redirect */}
+              <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <ExternalLink className="w-4 h-4 text-violet-600" />
+                  <Label className="text-sm font-semibold text-slate-800">Custom Thank You Redirect</Label>
+                </div>
+                <p className="text-[10px] text-slate-500 -mt-2 mb-3">Redirect users after submission to your website or custom page</p>
+                
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-slate-500">Button Text</Label>
+                    <Input 
+                      value={formSettings.extra_settings?.thank_you_link_text || ''} 
+                      onChange={(e) => {
+                        console.log('DEBUG: Updating thank_you_link_text:', e.target.value);
+                        setFormSettings({ 
+                          ...formSettings, 
+                          extra_settings: {
+                            ...(formSettings.extra_settings || {}),
+                            thank_you_link_text: e.target.value
+                          }
+                        });
+                      }}
+                      className="h-8 text-xs bg-white"
+                      placeholder="e.g., Go to our website"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-slate-500 flex items-center gap-1">
+                      <LinkIcon className="w-3 h-3" /> Redirect URL
+                    </Label>
+                    <Input 
+                      value={formSettings.extra_settings?.thank_you_url || ''} 
+                      onChange={(e) => {
+                        console.log('DEBUG: Updating thank_you_url:', e.target.value);
+                        setFormSettings({ 
+                          ...formSettings, 
+                          extra_settings: {
+                            ...(formSettings.extra_settings || {}),
+                            thank_you_url: e.target.value
+                          }
+                        });
+                      }}
+                      className="h-8 text-xs bg-white"
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Remove Form Branding */}
+              <div className={`p-4 rounded-xl border transition-all duration-300 ${formSettings.extra_settings?.hide_branding ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-semibold text-slate-800">Remove Form Branding</Label>
+                    <p className="text-[10px] text-slate-500">Hide "Powered by TrustFlow" from submission form</p>
+                  </div>
+                  <Switch 
+                    checked={formSettings.extra_settings?.hide_branding || false} 
+                    onCheckedChange={(checked) => {
+                      console.log('DEBUG: Updating hide_branding:', checked);
+                      setFormSettings({ 
+                        ...formSettings, 
+                        extra_settings: {
+                          ...(formSettings.extra_settings || {}),
+                          hide_branding: checked
+                        }
+                      });
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
