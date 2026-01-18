@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom'; 
 import { supabase } from '@/lib/supabase';
-import { Star, Play, ChevronLeft, ChevronRight, BadgeCheck, Loader2, ExternalLink } from 'lucide-react'; 
+import { Star, Play, ChevronLeft, ChevronRight, BadgeCheck, Loader2, ExternalLink, Heart, Clock, Quote } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion'; 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import '@/index.css';
@@ -165,8 +165,12 @@ const WallOfLoveContent = ({ customSpaceId }) => {
     smoothContinuousScroll: false,
     smoothScrollSpeed: 30,
     showBranding: true,
+    seeMoreEnabled: true,
     seeMoreButtonText: 'See More',
-    seeMoreButtonLink: '#'
+    seeMoreButtonLink: '#',
+    // Gallery settings
+    presetId: 'default',
+    cardStyle: 'default'
   });
 
   // --- 1. SUPER FAST TRANSPARENCY ---
@@ -516,13 +520,350 @@ const WallOfLoveContent = ({ customSpaceId }) => {
   const isCarousel = settings.layout === 'carousel';
   const bubbleBgClass = settings.cardTheme === 'dark' ? 'bg-slate-800' : 'bg-slate-100';
   const shouldAnimate = !settings.autoScroll && !settings.smoothContinuousScroll; 
+  const isDark = settings.cardTheme === 'dark';
 
-  // --- CARD CONTENT GENERATOR ---
+  // --- CARD CONTENT GENERATOR WITH CARD STYLE SUPPORT ---
   const renderCardContent = (testimonial, index, forOverlay = false) => {
+    const cardStyle = settings.cardStyle || 'default';
     const isBubble = settings.testimonialStyle === 'bubble';
     
+    // Common star rating component
+    const StarRating = ({ rating, size = 'sm' }) => {
+      const sizeClass = size === 'xs' ? 'w-3 h-3' : size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4';
+      return (
+        <div className="flex gap-0.5">
+          {[...Array(5)].map((_, i) => (
+            <Star key={i} className={`${sizeClass} ${i < (rating || 5) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+          ))}
+        </div>
+      );
+    };
+
+    // Common branding badge - position varies by card style
+    const BrandingBadge = ({ position = 'top-right' }) => {
+      if (settings.showBranding === false) return null;
+      
+      const positionClasses = {
+        'top-right': 'absolute top-2 right-2',
+        'top-left': 'absolute top-2 left-2',
+        'bottom-right': 'absolute bottom-2 right-2',
+        'bottom-left': 'absolute bottom-2 left-2',
+        'bottom-center': 'absolute bottom-2 left-1/2 -translate-x-1/2',
+        'inline-footer': 'mt-auto pt-2'
+      };
+      
+      return (
+        <div className={`${positionClasses[position]} z-20`}>
+          <span className={`text-[7px] sm:text-[8px] px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5 backdrop-blur-sm ${
+            isDark 
+              ? 'bg-slate-900/80 text-slate-400 border border-slate-700/50' 
+              : 'bg-white/90 text-slate-500 border border-slate-200/50 shadow-sm'
+          }`}>
+            <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-violet-500 text-violet-500" /> TrustFlow
+          </span>
+        </div>
+      );
+    };
+
+    // --- TESTIMONIAL CLASSIC STYLE (Profile First - like Testimonial.to) ---
+    if (cardStyle === 'testimonial-classic') {
+      return (
+        <>
+          {/* Branding at bottom-right to avoid heart icon conflict */}
+          <BrandingBadge position="bottom-right" />
+          {/* Profile Top with Hearts */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-white shadow-md">
+                <AvatarImage src={testimonial.respondent_photo_url} className="object-cover" />
+                <AvatarFallback className="bg-gradient-to-br from-violet-400 to-purple-500 text-white">{testimonial.respondent_name?.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="font-bold text-sm sm:text-base">{testimonial.respondent_name || "Anonymous"}</div>
+                <div className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {testimonial.respondent_role || 'Verified User'}
+                </div>
+              </div>
+            </div>
+            <Heart className="w-5 h-5 text-rose-400 fill-rose-400 flex-shrink-0" />
+          </div>
+          
+          {/* Rating */}
+          {testimonial.rating && <div className="mb-3"><StarRating rating={testimonial.rating} /></div>}
+          
+          {/* Content */}
+          <div className={`flex-1 ${forOverlay ? 'pb-4' : 'pb-2'}`}>
+            {testimonial.type === 'video' && testimonial.video_url ? (
+              <StylishVideoPlayer videoUrl={testimonial.video_url} corners={settings.corners === 'sharp' ? 'rounded-none' : 'rounded-xl'} />
+            ) : (
+              <p 
+                ref={el => { if (!forOverlay) textRefs.current[`${testimonial.id}-${index}`] = el; }}
+                className="text-sm leading-relaxed whitespace-pre-line"
+                style={forOverlay ? {} : { display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+              >
+                {testimonial.content}
+              </p>
+            )}
+          </div>
+        </>
+      );
+    }
+
+    // --- MIXPANEL STYLE (Profile on top, company logo bottom) ---
+    if (cardStyle === 'mixpanel-style') {
+      return (
+        <>
+          {/* Branding at top-right for mixpanel style */}
+          <BrandingBadge position="top-right" />
+          {/* Profile Top */}
+          <div className="flex items-center gap-3 mb-4">
+            <Avatar className="w-12 h-12 sm:w-14 sm:h-14 border-2 border-white shadow-lg">
+              <AvatarImage src={testimonial.respondent_photo_url} className="object-cover" />
+              <AvatarFallback className="bg-gradient-to-br from-violet-400 to-purple-500 text-white text-lg">{testimonial.respondent_name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="font-bold text-base sm:text-lg">{testimonial.respondent_name || "Anonymous"}</div>
+              <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                {testimonial.respondent_role || 'Verified User'}
+              </div>
+            </div>
+          </div>
+          
+          {/* Content with possible highlights */}
+          <div className={`flex-1 mb-4 ${forOverlay ? 'pb-4' : ''}`}>
+            {testimonial.type === 'video' && testimonial.video_url ? (
+              <StylishVideoPlayer videoUrl={testimonial.video_url} corners={settings.corners === 'sharp' ? 'rounded-none' : 'rounded-xl'} />
+            ) : (
+              <p 
+                ref={el => { if (!forOverlay) textRefs.current[`${testimonial.id}-${index}`] = el; }}
+                className="text-sm sm:text-base leading-relaxed whitespace-pre-line"
+                style={forOverlay ? {} : { display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+              >
+                {testimonial.content}
+              </p>
+            )}
+          </div>
+          
+          {/* Company Logo Footer */}
+          <div className={`pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'} flex items-center gap-2`}>
+            <div className={`w-5 h-5 rounded ${isDark ? 'bg-purple-600' : 'bg-purple-500'} flex items-center justify-center`}>
+              <span className="text-white text-[8px] font-bold">✓</span>
+            </div>
+            <span className={`text-xs font-medium ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>Verified Review</span>
+          </div>
+        </>
+      );
+    }
+
+    // --- VIDEO HERO STYLE ---
+    if (cardStyle === 'video-hero' && testimonial.type === 'video' && testimonial.video_url) {
+      return (
+        <div className="relative h-full min-h-[280px]">
+          {/* Branding at top-left, heart at top-right for video hero */}
+          <BrandingBadge position="top-left" />
+          <Heart className="absolute top-2 right-2 w-5 h-5 text-rose-400 fill-rose-400 z-20 drop-shadow-lg" />
+          
+          {/* Video Background */}
+          <div className="absolute inset-0">
+            <StylishVideoPlayer videoUrl={testimonial.video_url} corners={settings.corners === 'sharp' ? 'rounded-none' : 'rounded-2xl'} className="h-full" />
+          </div>
+          
+          {/* Bottom Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/50 to-transparent rounded-b-2xl">
+            <div className="flex items-center gap-2 mb-2">
+              <Avatar className="w-8 h-8 border-2 border-white/50">
+                <AvatarImage src={testimonial.respondent_photo_url} className="object-cover" />
+                <AvatarFallback className="bg-white/20 text-white text-xs">{testimonial.respondent_name?.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="text-white">
+                <div className="font-semibold text-sm">{testimonial.respondent_name || "Anonymous"}</div>
+                <div className="text-[10px] text-white/70">{testimonial.respondent_role || 'Verified'}</div>
+              </div>
+            </div>
+            {testimonial.rating && <StarRating rating={testimonial.rating} size="xs" />}
+          </div>
+        </div>
+      );
+    }
+
+    // --- TWITTER/SOCIAL FEED STYLE ---
+    if (cardStyle === 'twitter-style') {
+      return (
+        <>
+          {/* Branding at top-right for twitter style */}
+          <BrandingBadge position="top-right" />
+          {/* Profile Row */}
+          <div className="flex items-start gap-3 mb-3">
+            <Avatar className="w-10 h-10 sm:w-12 sm:h-12">
+              <AvatarImage src={testimonial.respondent_photo_url} className="object-cover" />
+              <AvatarFallback className="bg-slate-200 text-slate-600">{testimonial.respondent_name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-bold text-sm truncate">{testimonial.respondent_name || "Anonymous"}</span>
+                <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500 flex-shrink-0" />
+              </div>
+              <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                {testimonial.respondent_role || 'Verified User'}
+              </div>
+            </div>
+          </div>
+          
+          {/* Content */}
+          <div className={`flex-1 mb-3 ${forOverlay ? 'pb-4' : ''}`}>
+            {testimonial.type === 'video' && testimonial.video_url ? (
+              <StylishVideoPlayer videoUrl={testimonial.video_url} corners="rounded-xl" />
+            ) : (
+              <p 
+                ref={el => { if (!forOverlay) textRefs.current[`${testimonial.id}-${index}`] = el; }}
+                className="text-sm leading-relaxed whitespace-pre-line"
+                style={forOverlay ? {} : { display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+              >
+                {testimonial.content}
+              </p>
+            )}
+          </div>
+          
+          {/* Timestamp Footer */}
+          <div className={`pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'} flex items-center gap-2`}>
+            <Clock className={`w-3.5 h-3.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+            <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              {new Date(testimonial.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </span>
+            {testimonial.rating && <div className="ml-auto"><StarRating rating={testimonial.rating} size="xs" /></div>}
+          </div>
+        </>
+      );
+    }
+
+    // --- QUOTE CARD STYLE ---
+    if (cardStyle === 'quote-card') {
+      return (
+        <>
+          {/* Branding at top-right for quote card */}
+          <BrandingBadge position="top-right" />
+          {/* Large Quote Icon */}
+          <Quote className={`w-8 h-8 sm:w-10 sm:h-10 ${isDark ? 'text-violet-400' : 'text-violet-500'} opacity-40 mb-3`} />
+          
+          {/* Large Content */}
+          <div className={`flex-1 mb-4 ${forOverlay ? 'pb-4' : ''}`}>
+            {testimonial.type === 'video' && testimonial.video_url ? (
+              <StylishVideoPlayer videoUrl={testimonial.video_url} corners="rounded-xl" />
+            ) : (
+              <p 
+                ref={el => { if (!forOverlay) textRefs.current[`${testimonial.id}-${index}`] = el; }}
+                className="text-base sm:text-lg font-serif italic leading-relaxed whitespace-pre-line"
+                style={forOverlay ? {} : { display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+              >
+                "{testimonial.content}"
+              </p>
+            )}
+          </div>
+          
+          {/* Rating if exists */}
+          {testimonial.rating && <div className="mb-4"><StarRating rating={testimonial.rating} /></div>}
+          
+          {/* Signature Footer */}
+          <div className="flex items-center justify-end gap-3">
+            <div className="text-right">
+              <div className={`text-[10px] uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-1`}>— Signed by</div>
+              <div className="font-bold text-sm">{testimonial.respondent_name || "Anonymous"}</div>
+              <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{testimonial.respondent_role || 'Verified'}</div>
+            </div>
+            <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-violet-200">
+              <AvatarImage src={testimonial.respondent_photo_url} className="object-cover" />
+              <AvatarFallback className="bg-gradient-to-br from-violet-400 to-purple-500 text-white">{testimonial.respondent_name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+          </div>
+        </>
+      );
+    }
+
+    // --- MODERN SPLIT STYLE ---
+    if (cardStyle === 'modern-split') {
+      return (
+        <div className="flex h-full relative">
+          {/* Branding at bottom-right for split style */}
+          <BrandingBadge position="bottom-right" />
+          {/* Left Avatar Area */}
+          <div className={`w-1/3 ${isDark ? 'bg-slate-700' : 'bg-slate-100'} flex items-center justify-center rounded-l-xl -m-5 sm:-m-6 mr-4`}>
+            <Avatar className="w-16 h-16 sm:w-20 sm:h-20">
+              <AvatarImage src={testimonial.respondent_photo_url} className="object-cover" />
+              <AvatarFallback className="bg-gradient-to-br from-violet-400 to-purple-500 text-white text-xl">{testimonial.respondent_name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+          </div>
+          
+          {/* Right Content */}
+          <div className="flex-1 flex flex-col justify-between py-1">
+            {testimonial.rating && <div className="mb-2"><StarRating rating={testimonial.rating} /></div>}
+            
+            <div className={`flex-1 mb-3 ${forOverlay ? 'pb-2' : ''}`}>
+              {testimonial.type === 'video' && testimonial.video_url ? (
+                <StylishVideoPlayer videoUrl={testimonial.video_url} corners="rounded-lg" />
+              ) : (
+                <p 
+                  ref={el => { if (!forOverlay) textRefs.current[`${testimonial.id}-${index}`] = el; }}
+                  className="text-sm leading-relaxed whitespace-pre-line"
+                  style={forOverlay ? {} : { display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                >
+                  {testimonial.content}
+                </p>
+              )}
+            </div>
+            
+            <div className={`pt-2 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+              <div className="font-bold text-sm">{testimonial.respondent_name || "Anonymous"}</div>
+              <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{testimonial.respondent_role || 'Verified'}</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- FLOATING BADGE STYLE ---
+    if (cardStyle === 'floating-badge') {
+      return (
+        <div className="relative pt-6">
+          {/* Branding at top-right for floating badge style */}
+          <BrandingBadge position="top-right" />
+          {/* Floating Avatar */}
+          <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10">
+            <Avatar className="w-14 h-14 sm:w-16 sm:h-16 border-4 border-white shadow-xl">
+              <AvatarImage src={testimonial.respondent_photo_url} className="object-cover" />
+              <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-white text-xl">{testimonial.respondent_name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+          </div>
+          
+          {/* Card Body - name and role centered */}
+          <div className="text-center pt-10">
+            <div className="font-bold text-base mb-1">{testimonial.respondent_name || "Anonymous"}</div>
+            <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} mb-3`}>{testimonial.respondent_role || 'Verified'}</div>
+            
+            {testimonial.rating && <div className="flex justify-center mb-3"><StarRating rating={testimonial.rating} /></div>}
+            
+            <div className={forOverlay ? 'pb-4' : ''}>
+              {testimonial.type === 'video' && testimonial.video_url ? (
+                <StylishVideoPlayer videoUrl={testimonial.video_url} corners="rounded-xl" />
+              ) : (
+                <p 
+                  ref={el => { if (!forOverlay) textRefs.current[`${testimonial.id}-${index}`] = el; }}
+                  className="text-sm leading-relaxed text-center whitespace-pre-line"
+                  style={forOverlay ? {} : { display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                >
+                  {testimonial.content}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- DEFAULT STYLE (TrustFlow Classic) ---
     return (
         <>
+            {/* Branding at top-right for default style */}
+            <BrandingBadge position="top-right" />
             {testimonial.rating && ( 
                 <div className="flex gap-0.5 mb-2 sm:mb-3">
                     {[...Array(5)].map((_, i) => (
@@ -572,15 +913,6 @@ const WallOfLoveContent = ({ customSpaceId }) => {
                     </div>
                 </div>
             </div>
-            
-            {/* TrustFlow Branding - Top Right aligned with rating stars */}
-            {settings.showBranding !== false && (
-                <div className="absolute top-2 right-2">
-                    <span className={`text-[8px] px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${settings.cardTheme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
-                        <Star className="w-2.5 h-2.5 fill-violet-500 text-violet-500" /> TrustFlow
-                    </span>
-                </div>
-            )}
         </>
       );
   }
@@ -593,8 +925,8 @@ const WallOfLoveContent = ({ customSpaceId }) => {
       animate={{ opacity: 1 }} 
       transition={{ duration: 0.3 }}
       ref={outerContainerRef} 
-      className="w-full relative group font-sans py-12 overflow-x-hidden" 
-      style={{ minHeight: '100px' }}
+      className="w-full relative group font-sans py-12 px-4 sm:px-6 lg:px-8" 
+      style={{ minHeight: '100px', overflow: 'visible' }}
       // GLOBAL PAUSE HANDLER for entire area
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
@@ -673,9 +1005,9 @@ const WallOfLoveContent = ({ customSpaceId }) => {
             ref={carouselConstraintsRef}
             className={`
               ${isCarousel ? `flex gap-4 sm:gap-6 py-8 sm:py-12 px-5 sm:px-6 cursor-grab active:cursor-grabbing ${settings.carouselSameSize ? 'items-stretch' : 'items-start'}` : ''} 
-              ${settings.layout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-2 sm:p-4' : ''}
-              ${settings.layout === 'masonry' ? 'block columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6 p-2 sm:p-4 mobile-masonry-container' : ''}
-              ${settings.layout === 'list' ? 'max-w-2xl mx-auto flex flex-col gap-4 p-2 sm:p-4' : ''}
+              ${settings.layout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4 sm:p-6' : ''}
+              ${settings.layout === 'masonry' ? 'block columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6 p-4 sm:p-6 mobile-masonry-container' : ''}
+              ${settings.layout === 'list' ? 'max-w-2xl mx-auto flex flex-col gap-4 p-4 sm:p-6' : ''}
             `}
             drag={isCarousel ? "x" : false}
             dragConstraints={isCarousel ? { right: 0, left: -((testimonials.length * (300 + 24)) - maskWidth) } : false} 
@@ -724,7 +1056,7 @@ const WallOfLoveContent = ({ customSpaceId }) => {
       </div>
 
       {/* See More Button */}
-      {settings.seeMoreButtonText && settings.seeMoreButtonLink && settings.seeMoreButtonLink !== '#' && (
+      {settings.seeMoreEnabled !== false && settings.seeMoreButtonText && settings.seeMoreButtonLink && settings.seeMoreButtonLink !== '#' && (
         <div className="flex justify-center mt-8">
           <a 
             href={settings.seeMoreButtonLink}

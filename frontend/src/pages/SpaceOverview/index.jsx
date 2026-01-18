@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { 
-  ArrowLeft, Copy, ExternalLink, Inbox, Edit, Code, Settings, Loader2, Share2, BarChart3 
+  ArrowLeft, Copy, ExternalLink, Inbox, Edit, Code, Settings, Loader2, Share2, BarChart3, Sparkles 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
@@ -18,6 +18,7 @@ import InboxTab from './components/InboxTab';
 import EditFormTab from './components/EditFormTab';
 import ShareTab from './components/ShareTab';
 import WidgetTab from './components/WidgetTab';
+import GalleryTab from './components/GalleryTab';
 import SettingsTab from './components/SettingsTab';
 import CTADashboardTab from './components/CTADashboardTab';
 
@@ -59,8 +60,12 @@ const SpaceOverview = () => {
     smoothContinuousScroll: false,  // Marquee-style infinite scroll
     smoothScrollSpeed: 30,          // Pixels per second for smooth scroll
     showBranding: true,             // Show "Powered by TrustFlow" badge
+    seeMoreEnabled: true,           // Toggle for See More button visibility
     seeMoreButtonText: 'See More',  // See More button text
     seeMoreButtonLink: '#',         // See More button redirect URL
+    // Gallery Tab Settings
+    presetId: 'default',            // Currently applied preset ID
+    cardStyle: 'default',           // Currently applied card layout ID
   };
 
   // --- STATE ---
@@ -364,6 +369,11 @@ const SpaceOverview = () => {
                 Widget
               </TabsTrigger>
 
+              <TabsTrigger value="gallery" className="flex items-center gap-2 flex-shrink-0">
+                <Sparkles className="w-4 h-4" />
+                Gallery
+              </TabsTrigger>
+
               <TabsTrigger value="share" className="flex items-center gap-2 flex-shrink-0">
                 <Share2 className="w-4 h-4" />
                 Share & QR
@@ -408,6 +418,17 @@ const SpaceOverview = () => {
                 widgetSettings={widgetSettings}
                 setWidgetSettings={setWidgetSettings}
                 saveWidgetSettings={saveWidgetSettings}
+              />
+            </TabsContent>
+
+            <TabsContent value="gallery" className="mt-0">
+              <GalleryTab 
+                spaceId={spaceId}
+                widgetSettings={widgetSettings}
+                setWidgetSettings={setWidgetSettings}
+                saveWidgetSettings={saveWidgetSettings}
+                setActiveTab={setActiveTab}
+                testimonials={testimonials}
               />
             </TabsContent>
 
