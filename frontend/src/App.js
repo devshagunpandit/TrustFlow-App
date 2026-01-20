@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { Toaster } from "@/components/ui/toaster";
 
 // Pages
@@ -12,6 +13,7 @@ import SpaceOverview from "@/pages/SpaceOverview";
 import SubmitTestimonial from "@/pages/SubmitTestimonial";
 import WallOfLove from "@/pages/WallOfLove";
 import ForgotPassword from "./pages/ForgotPassword";
+import Pricing from "@/pages/Pricing";
 
 // List of known TrustFlow domains (add your production domains here)
 const KNOWN_DOMAINS = [
@@ -159,6 +161,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword/>}/>
       <Route path="/signup" element={<Signup />} />
+      <Route path="/pricing" element={<Pricing />} />
 
       
       {/* Public Submission Portal */}
@@ -206,8 +209,10 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
-        <Toaster />
+        <SubscriptionProvider>
+          <AppRoutes />
+          <Toaster />
+        </SubscriptionProvider>
       </AuthProvider>
     </BrowserRouter>
   );

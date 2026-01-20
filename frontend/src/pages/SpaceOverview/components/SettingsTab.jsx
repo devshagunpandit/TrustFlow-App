@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import confetti from 'canvas-confetti';
+import { FeatureGate, PlanBadge, FeatureIndicator } from '@/components/FeatureGate';
+import { useFeature } from '@/hooks/useFeature';
 
 // --- INTELLIGENT ERROR MESSAGES MAPPING ---
 const getHumanReadableError = (statusCode, errorType) => {
@@ -1406,26 +1408,24 @@ const SettingsTab = ({ space, spaceId, navigate, deleteSpace, updateSpaceState, 
         </Card>
 
         {/* 1.5 CUSTOM DOMAIN (Pro Feature) */}
-        <Card className="border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-violet-100 dark:bg-violet-900/20 rounded-lg">
-                  <Link2 className="w-5 h-5 text-violet-600" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">Custom Domain</CardTitle>
-                    <Badge className="bg-violet-600 text-white text-[10px] px-2 py-0.5 font-semibold border-0">
-                      <Crown className="w-3 h-3 mr-1" />
-                      PRO
-                    </Badge>
+        <FeatureGate featureKey="advanced.custom_domains">
+          <Card className="border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-violet-100 dark:bg-violet-900/20 rounded-lg">
+                    <Link2 className="w-5 h-5 text-violet-600" />
                   </div>
-                  <CardDescription>Connect your own domain for a branded experience.</CardDescription>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">Custom Domain</CardTitle>
+                      <FeatureIndicator featureKey="advanced.custom_domains" />
+                    </div>
+                    <CardDescription>Connect your own domain for a branded experience.</CardDescription>
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardHeader>
+            </CardHeader>
           <CardContent className="space-y-4">
             {isDomainLoading ? (
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -1698,6 +1698,7 @@ const SettingsTab = ({ space, spaceId, navigate, deleteSpace, updateSpaceState, 
             )}
           </CardContent>
         </Card>
+        </FeatureGate>
 
         {/* 2. NOTIFICATIONS & EXPORT (Same as before) */}
         <div className="grid md:grid-cols-2 gap-6">
@@ -1720,11 +1721,13 @@ const SettingsTab = ({ space, spaceId, navigate, deleteSpace, updateSpaceState, 
             </CardContent>
           </Card>
 
+          <FeatureGate featureKey="advanced.export_data" showBadge={false}>
           <Card className="border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg"><Download className="w-5 h-5 text-green-600" /></div>
                 <CardTitle className="text-lg">Export Data</CardTitle>
+                <FeatureIndicator featureKey="advanced.export_data" />
               </div>
             </CardHeader>
             <CardContent className="flex-1">
@@ -1735,9 +1738,11 @@ const SettingsTab = ({ space, spaceId, navigate, deleteSpace, updateSpaceState, 
               </div>
             </CardContent>
           </Card>
+          </FeatureGate>
         </div>
 
         {/* 2.5 WEBHOOKS & AUTOMATION */}
+        <FeatureGate featureKey="advanced.webhooks">
         <Card className="border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
@@ -1748,10 +1753,7 @@ const SettingsTab = ({ space, spaceId, navigate, deleteSpace, updateSpaceState, 
                 <div>
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg">Webhooks & Automation</CardTitle>
-                    <Badge className="bg-gradient-to-r from-violet-600 to-blue-600 text-white text-[10px] px-2 py-0.5 font-semibold border-0">
-                      <Zap className="w-3 h-3 mr-1" />
-                      NEW
-                    </Badge>
+                    <FeatureIndicator featureKey="advanced.webhooks" />
                   </div>
                   <CardDescription>Send real-time notifications to Zapier, Slack, or any webhook endpoint.</CardDescription>
                 </div>
@@ -1954,6 +1956,7 @@ const SettingsTab = ({ space, spaceId, navigate, deleteSpace, updateSpaceState, 
             )}
           </CardContent>
         </Card>
+        </FeatureGate>
 
         {/* Delete Webhook Confirmation Modal */}
         <AnimatePresence>

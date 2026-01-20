@@ -13,10 +13,12 @@ import {
   Star, Video, FileText, Loader2, Smartphone, Tablet, Laptop, 
   Palette, Type, Layout, ArrowLeft, User, CheckCircle, Camera, Upload, RotateCcw,
   Image as ImageIcon, Link as LinkIcon, Plus, Heart, Monitor, Crown, X, Aperture, Check, AlertCircle, Trash2,
-  ExternalLink, Save, Sparkles, Zap, Moon, Sun, Waves, Mountain, Flame, Snowflake, Leaf, CloudRain
+  ExternalLink, Save, Sparkles, Zap, Moon, Sun, Waves, Mountain, Flame, Snowflake, Leaf, CloudRain, Lock
 } from 'lucide-react';
 import { PremiumToggle, SectionHeader } from './SharedComponents';
 import confetti from 'canvas-confetti';
+import { FeatureGate, PlanBadge, FeatureIndicator, UpgradeBanner } from '@/components/FeatureGate';
+import { useFeature } from '@/hooks/useFeature';
 
 const EditFormTab = ({ 
   formSettings, 
@@ -24,6 +26,9 @@ const EditFormTab = ({
   saveFormSettings, 
   saving 
 }) => {
+  // Feature Access Checks - Called at component level
+  const { isAllowed: hasPageThemeAccess } = useFeature('edit_form.page_theme');
+  
   // --- Constants ---
   const DEFAULT_THEME_CONFIG = {
     theme: 'light', 
@@ -57,12 +62,29 @@ const EditFormTab = ({
       icon: Sun,
       description: 'Clean & simple',
       preview: 'bg-gradient-to-br from-slate-50 to-white',
+      isPremium: false, // FREE theme
       styles: {
         background: 'bg-gradient-to-br from-slate-50 via-white to-slate-50',
         pattern: '',
         overlay: '',
         cardGlow: false,
         floatingElements: false
+      }
+    },
+    {
+      id: 'dark',
+      name: 'Dark Mode',
+      icon: Moon,
+      description: 'Sleek dark theme',
+      preview: 'bg-gradient-to-br from-slate-800 to-slate-900',
+      isPremium: false, // FREE theme
+      styles: {
+        background: 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900',
+        pattern: '',
+        overlay: '',
+        cardGlow: false,
+        floatingElements: false,
+        isDark: true
       }
     },
     {
@@ -83,7 +105,7 @@ const EditFormTab = ({
     {
       id: 'cosmic',
       name: 'Cosmic Night',
-      icon: Moon,
+      icon: Aperture,
       description: 'Deep space vibes',
       preview: 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900',
       isPremium: true,
@@ -967,6 +989,71 @@ const EditFormTab = ({
     </div>
   );
 
+  // Theme Button Component with Lock logic
+  const ThemeButton = ({ theme, isSelected, isLocked, onSelect }) => {
+    const [showUpgrade, setShowUpgrade] = useState(false);
+    const IconComponent = theme.icon;
+    
+    const handleClick = () => {
+      if (isLocked) {
+        setShowUpgrade(true);
+      } else {
+        onSelect();
+      }
+    };
+    
+    return (
+      <>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleClick}
+          className={`relative p-2 rounded-xl border-2 transition-all group ${
+            isSelected 
+              ? 'border-violet-500 shadow-lg shadow-violet-500/20' 
+              : isLocked
+                ? 'border-slate-200 opacity-70 cursor-pointer'
+                : 'border-slate-200 hover:border-violet-300 hover:shadow-md'
+          }`}
+        >
+          {/* Preview Gradient */}
+          <div className={`h-12 rounded-lg mb-2 ${theme.preview} relative overflow-hidden`}>
+            {/* Selected Check */}
+            {isSelected && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute top-1 right-1 w-5 h-5 bg-violet-600 rounded-full flex items-center justify-center shadow-lg"
+              >
+                <Check className="w-3 h-3 text-white" />
+              </motion.div>
+            )}
+            
+            {/* Lock Badge for Premium Themes */}
+            {isLocked && !isSelected && (
+              <div className="absolute top-1 right-1 w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center shadow-md">
+                <Lock className="w-2.5 h-2.5 text-white" />
+              </div>
+            )}
+            
+            {/* Icon */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:opacity-50 transition-opacity">
+              <IconComponent className={`w-6 h-6 ${theme.styles?.isDark ? 'text-white' : 'text-slate-700'}`} />
+            </div>
+          </div>
+          
+          {/* Name */}
+          <p className={`text-[10px] font-medium text-center truncate ${isSelected ? 'text-violet-700' : 'text-slate-600'}`}>
+            {theme.name}
+          </p>
+        </motion.button>
+        
+        {/* Upgrade Modal */}
+        <UpgradeBanner open={showUpgrade} onOpenChange={setShowUpgrade} featureKey="edit_form.page_theme" />
+      </>
+    );
+  };
+
   const PremiumHeader = ({ icon: Icon, title }) => (
     <div className="flex items-center gap-2 mb-4">
       <div className={`p-2 rounded-lg bg-violet-100 dark:bg-violet-900/30`}>
@@ -974,7 +1061,6 @@ const EditFormTab = ({
       </div>
       <h3 className="font-semibold text-sm flex items-center gap-2">
         {title}
-        <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 animate-pulse" />
       </h3>
     </div>
   );
@@ -1334,66 +1420,71 @@ const EditFormTab = ({
 
         <CardContent className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
            {/* Logo Section */}
-           <div>
-            <PremiumHeader icon={ImageIcon} title="Logo & Branding" />
-            
-            <div className="flex items-center justify-between mb-4">
-               {/* Logo Preview in Control Panel */}
-               <div className="h-16 w-16 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center bg-slate-50 overflow-hidden shrink-0 relative group">
-                  {logoPreview && !imageError ? (
-                    <>
-                      <img src={logoPreview} alt="Preview" className="w-full h-full object-contain p-1" />
-                      {/* Hover Overlay for removal visual hint (optional, but button below is better) */}
-                    </>
-                  ) : (
-                    <ImageIcon className="w-6 h-6 text-slate-300" />
-                  )}
-               </div>
-
-               {/* Remove Button (Visible if logo exists) */}
-               {logoPreview && (
-                  <Button variant="ghost" size="sm" onClick={handleRemoveLogo} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-2">
-                     <Trash2 className="w-4 h-4 mr-1" /> Remove
-                  </Button>
-               )}
-            </div>
-
-            <Tabs defaultValue="upload" value={logoMode} onValueChange={setLogoMode} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="upload" className="text-xs"><Upload className="w-3 h-3 mr-2" /> Upload</TabsTrigger>
-                <TabsTrigger value="url" className="text-xs"><LinkIcon className="w-3 h-3 mr-2" /> URL</TabsTrigger>
-              </TabsList>
+           <FeatureGate featureKey="edit_form.custom_logo" showBadge={false}>
+             <div>
+              <div className="flex items-center justify-between mb-4">
+                <PremiumHeader icon={ImageIcon} title="Logo & Branding" />
+                <FeatureIndicator featureKey="edit_form.custom_logo" />
+              </div>
               
-              <TabsContent value="upload" className="mt-0">
-                  <div className="flex-1">
-                    <Label htmlFor="logo-upload" className="cursor-pointer">
-                      <div className="flex items-center justify-center w-full px-4 py-2 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 text-xs font-medium transition-colors">
-                        {logoPreview ? 'Change File' : 'Choose File'}
-                      </div>
-                      <Input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                    </Label>
-                    <p className="text-[10px] text-muted-foreground mt-2 leading-tight">Rec: <span className="font-medium text-slate-700">400x400px PNG</span> (Transparent).</p>
-                  </div>
-              </TabsContent>
-              
-              <TabsContent value="url" className="mt-0">
-                <Input 
-                  placeholder="https://example.com/logo.png" 
-                  // If it's an internal/blob URL, show empty to keep it clean for user input
-                  value={isInternalUrl(formSettings.logo_url) ? '' : (formSettings.logo_url || '')} 
-                  onChange={(e) => { 
-                    setLogoPreview(e.target.value); 
-                    setFormSettings({...formSettings, logo_url: e.target.value});
-                    // If user types, we assume they are overriding the file upload
-                    setLogoFile(null);
-                    setImageError(false);
-                  }} 
-                  className="text-xs" 
-                />
-                <p className="text-[10px] text-muted-foreground mt-2">Paste a direct link to your logo image.</p>
-              </TabsContent>
-            </Tabs>
-          </div>
+              <div className="flex items-center justify-between mb-4">
+                 {/* Logo Preview in Control Panel */}
+                 <div className="h-16 w-16 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center bg-slate-50 overflow-hidden shrink-0 relative group">
+                    {logoPreview && !imageError ? (
+                      <>
+                        <img src={logoPreview} alt="Preview" className="w-full h-full object-contain p-1" />
+                        {/* Hover Overlay for removal visual hint (optional, but button below is better) */}
+                      </>
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-slate-300" />
+                    )}
+                 </div>
+
+                 {/* Remove Button (Visible if logo exists) */}
+                 {logoPreview && (
+                    <Button variant="ghost" size="sm" onClick={handleRemoveLogo} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-2">
+                       <Trash2 className="w-4 h-4 mr-1" /> Remove
+                    </Button>
+                 )}
+              </div>
+
+              <Tabs defaultValue="upload" value={logoMode} onValueChange={setLogoMode} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="upload" className="text-xs"><Upload className="w-3 h-3 mr-2" /> Upload</TabsTrigger>
+                  <TabsTrigger value="url" className="text-xs"><LinkIcon className="w-3 h-3 mr-2" /> URL</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="upload" className="mt-0">
+                    <div className="flex-1">
+                      <Label htmlFor="logo-upload" className="cursor-pointer">
+                        <div className="flex items-center justify-center w-full px-4 py-2 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 text-xs font-medium transition-colors">
+                          {logoPreview ? 'Change File' : 'Choose File'}
+                        </div>
+                        <Input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                      </Label>
+                      <p className="text-[10px] text-muted-foreground mt-2 leading-tight">Rec: <span className="font-medium text-slate-700">400x400px PNG</span> (Transparent).</p>
+                    </div>
+                </TabsContent>
+                
+                <TabsContent value="url" className="mt-0">
+                  <Input 
+                    placeholder="https://example.com/logo.png" 
+                    // If it's an internal/blob URL, show empty to keep it clean for user input
+                    value={isInternalUrl(formSettings.logo_url) ? '' : (formSettings.logo_url || '')} 
+                    onChange={(e) => { 
+                      setLogoPreview(e.target.value); 
+                      setFormSettings({...formSettings, logo_url: e.target.value});
+                      // If user types, we assume they are overriding the file upload
+                      setLogoFile(null);
+                      setImageError(false);
+                    }} 
+                    className="text-xs" 
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-2">Paste a direct link to your logo image.</p>
+                </TabsContent>
+              </Tabs>
+             </div>
+           </FeatureGate>
           <Separator />
           
           {/* Visual Theme */}
@@ -1429,7 +1520,7 @@ const EditFormTab = ({
           </div>
           <Separator />
 
-          {/* === PREMIUM PAGE THEMES SECTION === */}
+          {/* === PAGE THEMES SECTION - Free themes available to all === */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -1439,102 +1530,64 @@ const EditFormTab = ({
                 <div>
                   <h3 className="font-semibold text-sm flex items-center gap-2">
                     Page Theme
-                    <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                   </h3>
-                  <p className="text-[10px] text-slate-500">Premium backgrounds</p>
+                  <p className="text-[10px] text-slate-500">Choose a background style</p>
                 </div>
               </div>
-              <Badge className="text-[9px] bg-gradient-to-r from-violet-600 to-purple-600 text-white border-0">
-                {PAGE_THEMES.length - 1} Premium
-              </Badge>
             </div>
-            
-            {/* Theme Grid */}
-            <div className="grid grid-cols-3 gap-2">
-              {PAGE_THEMES.map((theme) => {
-                const IconComponent = theme.icon;
-                const isSelected = themeConfig.pageTheme === theme.id;
-                
-                return (
-                  <motion.button
-                    key={theme.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => updateThemeConfig({ pageTheme: theme.id })}
-                    className={`relative p-2 rounded-xl border-2 transition-all group ${
-                      isSelected 
-                        ? 'border-violet-500 shadow-lg shadow-violet-500/20' 
-                        : 'border-slate-200 hover:border-violet-300 hover:shadow-md'
-                    }`}
-                  >
-                    {/* Preview Gradient */}
-                    <div className={`h-12 rounded-lg mb-2 ${theme.preview} relative overflow-hidden`}>
-                      {/* Selected Check */}
-                      {isSelected && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute top-1 right-1 w-5 h-5 bg-violet-600 rounded-full flex items-center justify-center shadow-lg"
-                        >
-                          <Check className="w-3 h-3 text-white" />
-                        </motion.div>
-                      )}
-                      
-                      {/* Premium Badge */}
-                      {theme.isPremium && !isSelected && (
-                        <div className="absolute top-1 right-1">
-                          <Crown className="w-3 h-3 text-amber-500 fill-amber-500 drop-shadow-sm" />
-                        </div>
-                      )}
-                      
-                      {/* Icon */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:opacity-50 transition-opacity">
-                        <IconComponent className={`w-6 h-6 ${theme.styles?.isDark ? 'text-white' : 'text-slate-700'}`} />
+          
+          {/* Theme Grid */}
+          <div className="grid grid-cols-3 gap-2">
+            {PAGE_THEMES.map((theme) => {
+              const isSelected = themeConfig.pageTheme === theme.id;
+              const isPremiumTheme = theme.isPremium;
+              const isLocked = isPremiumTheme && !hasPageThemeAccess;
+              
+              return (
+                <ThemeButton 
+                  key={theme.id}
+                  theme={theme}
+                  isSelected={isSelected}
+                  isLocked={isLocked}
+                  onSelect={() => !isLocked && updateThemeConfig({ pageTheme: theme.id })}
+                />
+              );
+            })}
+          </div>
+          
+          {/* Current Theme Info */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={themeConfig.pageTheme}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-3 p-3 bg-gradient-to-r from-violet-50 to-purple-50 rounded-lg border border-violet-100"
+            >
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const current = getCurrentPageTheme();
+                  const IconComponent = current.icon;
+                  return (
+                    <>
+                      <div className={`p-1.5 rounded-lg ${current.preview}`}>
+                        <IconComponent className={`w-4 h-4 ${current.styles?.isDark ? 'text-white' : 'text-slate-600'}`} />
                       </div>
-                    </div>
-                    
-                    {/* Name */}
-                    <p className={`text-[10px] font-medium text-center truncate ${isSelected ? 'text-violet-700' : 'text-slate-600'}`}>
-                      {theme.name}
-                    </p>
-                  </motion.button>
-                );
-              })}
-            </div>
-            
-            {/* Current Theme Info */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={themeConfig.pageTheme}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mt-3 p-3 bg-gradient-to-r from-violet-50 to-purple-50 rounded-lg border border-violet-100"
-              >
-                <div className="flex items-center gap-2">
-                  {(() => {
-                    const current = getCurrentPageTheme();
-                    const IconComponent = current.icon;
-                    return (
-                      <>
-                        <div className={`p-1.5 rounded-lg ${current.preview}`}>
-                          <IconComponent className={`w-4 h-4 ${current.styles?.isDark ? 'text-white' : 'text-slate-600'}`} />
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-violet-800">{current.name}</p>
-                          <p className="text-[10px] text-violet-600">{current.description}</p>
-                        </div>
-                        {current.isPremium && (
-                          <Badge className="ml-auto text-[8px] bg-amber-500 text-white border-0 px-1.5 py-0.5">
-                            PREMIUM
-                          </Badge>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                      <div>
+                        <p className="text-xs font-semibold text-violet-800">{current.name}</p>
+                        <p className="text-[10px] text-violet-600">{current.description}</p>
+                      </div>
+                      {current.isPremium && (
+                        <Badge className="ml-auto text-[8px] bg-amber-500 text-white border-0 px-1.5 py-0.5">
+                          STARTER
+                        </Badge>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          </AnimatePresence>
           </div>
           <Separator />
           
@@ -1584,18 +1637,19 @@ const EditFormTab = ({
           {/* PRO SETTINGS - Custom Thank You Page & Branding */}
           <div>
             <div className="flex items-center justify-between mb-4">
-               <SectionHeader icon={Crown} title="Pro Settings" />
-               <Badge className="text-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-0 shadow-sm flex items-center gap-1 px-2 py-0.5">
-                  <Star className="w-2.5 h-2.5 fill-current" /> PRO
-               </Badge>
+               <SectionHeader icon={Crown} title="Advanced Settings" />
             </div>
             
             <div className="space-y-4">
-              {/* Custom Thank You Page Redirect */}
+              {/* Custom Link Redirect - Pro Feature */}
+              <FeatureGate featureKey="edit_form.custom_link" showBadge={false}>
               <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <ExternalLink className="w-4 h-4 text-violet-600" />
-                  <Label className="text-sm font-semibold text-slate-800">Custom Thank You Redirect</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="w-4 h-4 text-violet-600" />
+                    <Label className="text-sm font-semibold text-slate-800">Custom Link Redirect</Label>
+                  </div>
+                  <FeatureIndicator featureKey="edit_form.custom_link" />
                 </div>
                 <p className="text-[10px] text-slate-500 -mt-2 mb-3">Redirect users after submission to your website or custom page</p>
                 
@@ -1640,12 +1694,17 @@ const EditFormTab = ({
                   </div>
                 </div>
               </div>
+              </FeatureGate>
               
-              {/* Remove Form Branding */}
+              {/* Remove Form Branding - STARTER */}
+              <FeatureGate featureKey="edit_form.remove_branding" showBadge={false}>
               <div className={`p-4 rounded-xl border transition-all duration-300 ${formSettings.extra_settings?.hide_branding ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label className="text-sm font-semibold text-slate-800">Remove Form Branding</Label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-semibold text-slate-800">Remove Form Branding</Label>
+                      <FeatureIndicator featureKey="edit_form.remove_branding" size="xs" />
+                    </div>
                     <p className="text-[10px] text-slate-500">Hide "Powered by TrustFlow" from submission form</p>
                   </div>
                   <Switch 
@@ -1663,29 +1722,53 @@ const EditFormTab = ({
                   />
                 </div>
               </div>
+              </FeatureGate>
             </div>
           </div>
           <Separator />
           
           {/* Features */}
           <div>
-            <PremiumHeader icon={Layout} title="Form Features" />
+            <div className="flex items-center justify-between mb-4">
+              <PremiumHeader icon={Layout} title="Form Features" />
+            </div>
             <div className="space-y-3">
+              {/* Text testimonials - FREE for all */}
               <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
                 <div className="space-y-0.5">
-                  <Label className="text-sm">Video Testimonials</Label>
+                  <Label className="text-sm">Text Testimonials</Label>
+                  <p className="text-[10px] text-muted-foreground">Always enabled for all users</p>
+                </div>
+                <Badge variant="outline" className="text-[9px] bg-green-50 text-green-600 border-green-200">FREE</Badge>
+              </div>
+              
+              {/* Video Testimonials - STARTER */}
+              <FeatureGate featureKey="edit_form.form_features" showBadge={false}>
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm">Video Testimonials</Label>
+                    <FeatureIndicator featureKey="edit_form.form_features" size="xs" />
+                  </div>
                   <p className="text-[10px] text-muted-foreground">Allow users to record videos</p>
                 </div>
                 <Switch checked={formSettings.collect_video ?? true} onCheckedChange={(checked) => setFormSettings({ ...formSettings, collect_video: checked })} />
               </div>
+              </FeatureGate>
               
+              {/* Photo/Image - STARTER */}
+              <FeatureGate featureKey="edit_form.form_features" showBadge={false}>
               <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
                 <div className="space-y-0.5">
-                  <Label className="text-sm">Photo/Image</Label>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm">Photo/Image</Label>
+                    <FeatureIndicator featureKey="edit_form.form_features" size="xs" />
+                  </div>
                   <p className="text-[10px] text-muted-foreground">Allow image uploads</p>
                 </div>
                 <Switch checked={formSettings.collect_photo ?? false} onCheckedChange={(checked) => setFormSettings({ ...formSettings, collect_photo: checked })} />
               </div>
+              </FeatureGate>
 
               <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
                 <div className="space-y-0.5">

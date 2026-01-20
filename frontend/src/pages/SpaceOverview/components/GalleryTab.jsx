@@ -15,10 +15,13 @@ import {
   Briefcase, Check, ChevronRight, Star, Grid3X3,
   LayoutGrid, Play, Loader2, Layers, CreditCard, Heart,
   MessageSquare, MessageCircle, Video, Twitter, Quote, User, Clock, Building2,
-  BadgeCheck, Eye, Monitor, Save, X, RotateCcw
+  BadgeCheck, Eye, Monitor, Save, X, RotateCcw, Lock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import { useFeature } from '@/hooks/useFeature';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { UpgradeBanner, checkPresetFeatures } from '@/components/FeatureGate';
 import { 
   WIDGET_PRESETS, 
   PRESET_CATEGORIES, 
@@ -150,7 +153,7 @@ const MiniPreview = ({ preset }) => {
 };
 
 // === PRESET CARD COMPONENT ===
-const PresetCard = ({ preset, isSelected, onSelect, isApplying }) => {
+const PresetCard = ({ preset, isSelected, onSelect, isApplying, isLocked }) => {
   const [isHovered, setIsHovered] = useState(false);
   
   return (
@@ -169,7 +172,7 @@ const PresetCard = ({ preset, isSelected, onSelect, isApplying }) => {
           isSelected 
             ? 'ring-2 ring-violet-500 ring-offset-2 shadow-lg shadow-violet-500/20' 
             : 'hover:shadow-xl border-slate-200'
-        }`}
+        } ${isLocked ? 'opacity-75' : ''}`}
         onClick={() => !isApplying && onSelect(preset)}
       >
         {/* Selection Indicator */}
@@ -202,13 +205,18 @@ const PresetCard = ({ preset, isSelected, onSelect, isApplying }) => {
                 >
                   <Button 
                     size="sm" 
-                    className="bg-white text-slate-900 hover:bg-slate-100"
+                    className={isLocked ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-700 hover:to-purple-700" : "bg-white text-slate-900 hover:bg-slate-100"}
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelect(preset);
                     }}
                   >
-                    {isSelected ? (
+                    {isLocked ? (
+                      <>
+                        <Lock className="w-3.5 h-3.5 mr-1" />
+                        Unlock
+                      </>
+                    ) : isSelected ? (
                       <>
                         <Check className="w-3.5 h-3.5 mr-1" />
                         Applied
@@ -525,7 +533,7 @@ const CardLayoutPreview = ({ layout, theme = 'light' }) => {
 };
 
 // === CARD LAYOUT CARD COMPONENT ===
-const CardLayoutCard = ({ layout, isSelected, onSelect, isApplying, theme }) => {
+const CardLayoutCard = ({ layout, isSelected, onSelect, isApplying, theme, isLocked }) => {
   const [isHovered, setIsHovered] = useState(false);
   
   return (
@@ -544,7 +552,7 @@ const CardLayoutCard = ({ layout, isSelected, onSelect, isApplying, theme }) => 
           isSelected 
             ? 'ring-2 ring-violet-500 ring-offset-2 shadow-lg shadow-violet-500/20' 
             : 'hover:shadow-xl border-slate-200'
-        }`}
+        } ${isLocked ? 'opacity-75' : ''}`}
         onClick={() => !isApplying && onSelect(layout)}
       >
         {/* Selection Indicator */}
@@ -587,13 +595,18 @@ const CardLayoutCard = ({ layout, isSelected, onSelect, isApplying, theme }) => 
                 >
                   <Button 
                     size="sm" 
-                    className="bg-white text-slate-900 hover:bg-slate-100"
+                    className={isLocked ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-700 hover:to-purple-700" : "bg-white text-slate-900 hover:bg-slate-100"}
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelect(layout);
                     }}
                   >
-                    {isSelected ? (
+                    {isLocked ? (
+                      <>
+                        <Lock className="w-3.5 h-3.5 mr-1" />
+                        Unlock
+                      </>
+                    ) : isSelected ? (
                       <>
                         <Check className="w-3.5 h-3.5 mr-1" />
                         Applied
@@ -649,6 +662,81 @@ const GalleryTab = ({
   const [isApplying, setIsApplying] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Subscription context for feature checking
+  const { hasFeature } = useSubscription();
+  
+  // Feature gating hooks & state
+  const { isAllowed: hasProPresets } = useFeature('gallery.pro_presets');
+  const { isAllowed: hasPremiumPresets } = useFeature('gallery.premium_presets');
+  const { isAllowed: hasProLayouts } = useFeature('gallery.pro_layouts');
+  const { isAllowed: hasPremiumLayouts } = useFeature('gallery.premium_layouts');
+  const { isAllowed: hasProCombos } = useFeature('gallery.pro_combos');
+  const { isAllowed: hasPremiumCombos } = useFeature('gallery.premium_combos');
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [lockedFeatureKey, setLockedFeatureKey] = useState(null);
+  
+  // Helper: Check if preset is locked based on plan features
+  const isPresetLocked = (preset) => {
+    // Default preset is ALWAYS unlocked for everyone (free users get only this)
+    if (preset.isDefault) return false;
+    
+    // If user has Pro gallery access, nothing is locked
+    if (hasProPresets) return false;
+    
+    // For Starter users: Some basic presets are unlocked (isPro: false ones)
+    // Premium/Pro presets remain locked
+    if (hasPremiumPresets) {
+      // Starter can access non-premium presets (isPro: false)
+      // Pro-only presets (isPro: true) remain locked for starter
+      return preset.isPro === true;
+    }
+    
+    // For Free users: ONLY default preset is unlocked (handled above)
+    // ALL other presets are locked for free users
+    return true;
+  };
+  
+  // Helper: Get the locked feature key for a preset
+  const getPresetLockedFeature = (preset) => {
+    if (preset.isPro) return 'gallery.pro_presets';
+    if (preset.isPremium) return 'gallery.premium_presets';
+    return 'gallery.premium_presets';
+  };
+
+  // Helper: Check if card layout is locked
+  const isLayoutLocked = (layout) => {
+    // Default layout is ALWAYS unlocked (free users get only this)
+    if (layout.isDefault) return false;
+    
+    // Pro users get everything
+    if (hasProLayouts) return false;
+    
+    // Starter users get non-pro layouts (isPro: false ones)
+    if (hasPremiumLayouts) {
+      // Pro-only layouts (isPro: true) remain locked for starter
+      return layout.isPro === true;
+    }
+    
+    // Free users: ONLY default layout is unlocked
+    // ALL other layouts are locked for free users
+    return true;
+  };
+
+  // Helper: Check if combo is locked
+  const isComboLocked = (combo) => {
+    // Pro users get everything
+    if (hasProCombos) return false;
+    
+    // Starter users get non-pro combos (isPro: false ones)
+    if (hasPremiumCombos) {
+      // Pro-only combos (isPro: true) remain locked for starter
+      return combo.isPro === true;
+    }
+    
+    // Free users: ALL combos are locked (no combos for free users)
+    return true;
+  };
 
   // Sample testimonial for preview
   const sampleTestimonial = testimonials[0] || {
@@ -884,26 +972,82 @@ const GalleryTab = ({
     );
   };
 
-  // Filter presets by category
+  // Filter presets by category and sort: unlocked first, then locked
   const filteredPresets = useMemo(() => {
-    return getPresetsByCategory(selectedCategory);
-  }, [selectedCategory]);
+    const presets = getPresetsByCategory(selectedCategory);
+    // Sort: unlocked presets first, then locked
+    return [...presets].sort((a, b) => {
+      const aLocked = isPresetLocked(a);
+      const bLocked = isPresetLocked(b);
+      if (aLocked === bLocked) {
+        // Keep defaults at the very top
+        if (a.isDefault) return -1;
+        if (b.isDefault) return 1;
+        return 0;
+      }
+      return aLocked ? 1 : -1;
+    });
+  }, [selectedCategory, hasProPresets, hasPremiumPresets]);
 
-  // Filter card layouts by category
+  // Filter card layouts by category and sort: unlocked first, then locked
   const filteredLayouts = useMemo(() => {
-    if (selectedLayoutCategory === 'all') return CARD_LAYOUT_PRESETS;
-    return CARD_LAYOUT_PRESETS.filter(l => l.category === selectedLayoutCategory);
-  }, [selectedLayoutCategory]);
+    let layouts;
+    if (selectedLayoutCategory === 'all') {
+      layouts = CARD_LAYOUT_PRESETS;
+    } else {
+      layouts = CARD_LAYOUT_PRESETS.filter(l => l.category === selectedLayoutCategory);
+    }
+    // Sort: unlocked layouts first, then locked
+    return [...layouts].sort((a, b) => {
+      const aLocked = isLayoutLocked(a);
+      const bLocked = isLayoutLocked(b);
+      if (aLocked === bLocked) {
+        // Keep defaults at the very top
+        if (a.isDefault) return -1;
+        if (b.isDefault) return 1;
+        return 0;
+      }
+      return aLocked ? 1 : -1;
+    });
+  }, [selectedLayoutCategory, hasProLayouts, hasPremiumLayouts]);
 
-  // Filter combo presets by category
+  // Filter combo presets by category and sort: unlocked first, then locked
   const filteredCombos = useMemo(() => {
-    if (selectedComboCategory === 'all') return COMBO_PRESETS;
-    return COMBO_PRESETS.filter(c => c.category === selectedComboCategory);
-  }, [selectedComboCategory]);
+    let combos;
+    if (selectedComboCategory === 'all') {
+      combos = COMBO_PRESETS;
+    } else {
+      combos = COMBO_PRESETS.filter(c => c.category === selectedComboCategory);
+    }
+    // Sort: unlocked combos first, then locked
+    return [...combos].sort((a, b) => {
+      const aLocked = isComboLocked(a);
+      const bLocked = isComboLocked(b);
+      if (aLocked === bLocked) {
+        // Keep defaults at the very top (if any)
+        if (a.isDefault) return -1;
+        if (b.isDefault) return 1;
+        return 0;
+      }
+      return aLocked ? 1 : -1;
+    });
+  }, [selectedComboCategory, hasProCombos, hasPremiumCombos]);
 
   // Handle Combo Preset Selection & Apply
   const handleApplyComboPreset = async (combo) => {
     if (isApplying) return;
+    
+    // Check if combo is premium/pro and user doesn't have access
+    if (combo.isPro && !hasProCombos) {
+      setLockedFeatureKey('gallery.pro_combos');
+      setUpgradeModalOpen(true);
+      return;
+    }
+    if (combo.isPremium && !hasPremiumCombos) {
+      setLockedFeatureKey('gallery.premium_combos');
+      setUpgradeModalOpen(true);
+      return;
+    }
     
     setIsApplying(true);
 
@@ -956,6 +1100,13 @@ const GalleryTab = ({
   const handleApplyPreset = (preset) => {
     if (isApplying) return;
     
+    // Check if preset is locked (either by tier or by features it uses)
+    if (isPresetLocked(preset)) {
+      setLockedFeatureKey(getPresetLockedFeature(preset));
+      setUpgradeModalOpen(true);
+      return;
+    }
+    
     setIsApplying(true);
 
     try {
@@ -1001,6 +1152,18 @@ const GalleryTab = ({
   // Handle Card Layout Selection & Apply (merges with current preset settings)
   const handleApplyCardLayout = (layout) => {
     if (isApplying) return;
+    
+    // Check if layout is premium/pro and user doesn't have access
+    if (layout.isPro && !hasProLayouts) {
+      setLockedFeatureKey('gallery.pro_layouts');
+      setUpgradeModalOpen(true);
+      return;
+    }
+    if (layout.isPremium && !hasPremiumLayouts) {
+      setLockedFeatureKey('gallery.premium_layouts');
+      setUpgradeModalOpen(true);
+      return;
+    }
     
     setIsApplying(true);
 
@@ -1372,6 +1535,7 @@ const GalleryTab = ({
                   isSelected={currentPresetId === preset.id}
                   onSelect={handleApplyPreset}
                   isApplying={isApplying}
+                  isLocked={isPresetLocked(preset)}
                 />
               ))}
             </AnimatePresence>
@@ -1443,6 +1607,7 @@ const GalleryTab = ({
                   onSelect={handleApplyCardLayout}
                   isApplying={isApplying}
                   theme={widgetSettings?.cardTheme || 'light'}
+                  isLocked={isLayoutLocked(layout)}
                 />
               ))}
             </AnimatePresence>
@@ -1521,6 +1686,7 @@ const GalleryTab = ({
                 const cardLayout = getCardLayoutById(combo.cardStyle);
                 const isCurrentCombo = widgetSettings?.presetId === combo.presetId && 
                                        widgetSettings?.cardStyle === combo.cardStyle;
+                const comboLocked = isComboLocked(combo);
                 
                 return (
                   <motion.div
@@ -1536,7 +1702,7 @@ const GalleryTab = ({
                         isCurrentCombo 
                           ? 'ring-2 ring-amber-500 shadow-lg shadow-amber-100' 
                           : 'hover:ring-2 hover:ring-amber-200'
-                      }`}
+                      } ${comboLocked ? 'opacity-75' : ''}`}
                       onClick={() => !isApplying && handleApplyComboPreset(combo)}
                     >
                       {/* Premium Badge */}
@@ -1612,9 +1778,11 @@ const GalleryTab = ({
                         <Button 
                           size="sm" 
                           className={`w-full mt-3 text-xs sm:text-sm h-8 sm:h-9 ${
-                            isCurrentCombo 
-                              ? 'bg-amber-500 hover:bg-amber-600' 
-                              : 'bg-slate-900 hover:bg-slate-800'
+                            comboLocked 
+                              ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700'
+                              : isCurrentCombo 
+                                ? 'bg-amber-500 hover:bg-amber-600' 
+                                : 'bg-slate-900 hover:bg-slate-800'
                           }`}
                           disabled={isApplying}
                         >
@@ -1622,6 +1790,11 @@ const GalleryTab = ({
                             <>
                               <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 animate-spin" />
                               Applying...
+                            </>
+                          ) : comboLocked ? (
+                            <>
+                              <Lock className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
+                              Unlock
                             </>
                           ) : isCurrentCombo ? (
                             <>
@@ -1691,6 +1864,13 @@ const GalleryTab = ({
           </div>
         </CardContent>
       </Card>
+      
+      {/* Upgrade Modal for Locked Premium Features */}
+      <UpgradeBanner 
+        open={upgradeModalOpen}
+        onOpenChange={setUpgradeModalOpen}
+        featureKey={lockedFeatureKey}
+      />
     </div>
   );
 };

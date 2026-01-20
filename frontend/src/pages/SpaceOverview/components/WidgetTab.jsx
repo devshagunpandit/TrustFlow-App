@@ -14,10 +14,12 @@ import {
   Check, X, Sparkles, RefreshCw, Gauge, ChevronLeft, ChevronRight, Star, BadgeCheck,
   Smartphone, Tablet, Laptop, Save, RotateCcw, Shuffle, Heading,
   Maximize2, Minimize2, Layers, Info, Loader2, AlertCircle, ChevronDown, CheckCircle, AlertTriangle, Bell, Clock, MapPin,
-  ExternalLink, Crown, Link as LinkIcon, Heart
+  ExternalLink, Crown, Link as LinkIcon, Heart, Lock
 } from 'lucide-react';
 import { StylishVideoPlayer, PremiumToggle, SectionHeader, CARD_WIDTH, GAP, PADDING_X } from './SharedComponents';
 import confetti from 'canvas-confetti';
+import { FeatureGate, LockedSwitch, PlanBadge, FeatureIndicator, LockedIndicator } from '@/components/FeatureGate';
+import { useFeature, usePlanCheck } from '@/hooks/useFeature';
 
 // --- CSS for Smooth Continuous Scroll Animation ---
 const smoothScrollPreviewStyles = `
@@ -1015,32 +1017,31 @@ const WidgetTab = ({
         
         <CardContent className="flex-1 overflow-y-auto p-6 space-y-10 scrollbar-thin scrollbar-thumb-violet-200 scrollbar-track-transparent">
           {/* --- NEW: FOMO POPUPS SECTION (PREMIUM) --- */}
-          <div className="space-y-4">
-             <div className="flex items-center justify-between mb-2">
-                <SectionHeader icon={Bell} title="Social Proof Popups" />
-                <Badge className="text-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-0 shadow-sm flex items-center gap-1 px-2 py-0.5">
-                   <Star className="w-2.5 h-2.5 fill-current" /> PRO
-                </Badge>
-             </div>
-             
-             <div className={`p-4 rounded-xl border transition-all duration-300 ${widgetSettings.popupsEnabled ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
-                 <div className="flex items-center justify-between mb-4">
-                     <div className="space-y-0.5">
-                         <Label className="text-sm font-semibold text-slate-800">Enable Popups</Label>
-                         <p className="text-[10px] text-slate-500">Show recent reviews in corner</p>
-                     </div>
-                     <ToggleSwitch 
-                        isOn={widgetSettings.popupsEnabled} 
-                        onToggle={() => setWidgetSettings({...widgetSettings, popupsEnabled: !widgetSettings.popupsEnabled})}
-                     />
-                 </div>
+          <FeatureGate featureKey="widget.social_proof_popups" showBadge={false}>
+            <div className="space-y-4">
+               <div className="flex items-center justify-between mb-2">
+                  <SectionHeader icon={Bell} title="Social Proof Popups" />
+                  <LockedIndicator featureKey="widget.social_proof_popups" />
+               </div>
+               
+               <div className={`p-4 rounded-xl border transition-all duration-300 ${widgetSettings.popupsEnabled ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
+                   <div className="flex items-center justify-between mb-4">
+                       <div className="space-y-0.5">
+                           <Label className="text-sm font-semibold text-slate-800">Enable Popups</Label>
+                           <p className="text-[10px] text-slate-500">Show recent reviews in corner</p>
+                       </div>
+                       <ToggleSwitch 
+                          isOn={widgetSettings.popupsEnabled} 
+                          onToggle={() => setWidgetSettings({...widgetSettings, popupsEnabled: !widgetSettings.popupsEnabled})}
+                       />
+                   </div>
 
-                 {/* Collapsible Settings */}
-                 <AnimatePresence>
-                    {widgetSettings.popupsEnabled && (
-                        <motion.div 
-                            initial={{ height: 0, opacity: 0 }} 
-                            animate={{ height: 'auto', opacity: 1 }} 
+                   {/* Collapsible Settings */}
+                   <AnimatePresence>
+                      {widgetSettings.popupsEnabled && (
+                          <motion.div 
+                              initial={{ height: 0, opacity: 0 }} 
+                              animate={{ height: 'auto', opacity: 1 }} 
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden space-y-4 pt-2 border-t border-violet-200/50"
                         >
@@ -1104,7 +1105,8 @@ const WidgetTab = ({
                     )}
                  </AnimatePresence>
              </div>
-          </div>
+            </div>
+          </FeatureGate>
 
           <Separator className="bg-slate-100" />
           {/* 1. Layout Structure */}
@@ -1180,10 +1182,11 @@ const WidgetTab = ({
           <Separator className="bg-slate-100" />
 
           {/* 3. Typography */}
+          <FeatureGate featureKey="widget.typography" showBadge={false}>
           <div className="space-y-4">
              <div className="flex items-center justify-between mb-2">
                 <SectionHeader icon={Heading} title="Typography & Headers" />
-                <Badge variant="outline" className="text-[10px] border-amber-200 text-amber-600 bg-amber-50">PREMIUM</Badge>
+                <FeatureIndicator featureKey="widget.typography" />
              </div>
              
              {/* Heading Control */}
@@ -1288,15 +1291,17 @@ const WidgetTab = ({
                  )}
              </div>
           </div>
+          </FeatureGate>
 
           <Separator className="bg-slate-100" />
 
           {/* 4. Card Styling */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between mb-2">
-                <SectionHeader icon={Palette} title="Card Styling" />
-                <Badge variant="outline" className="text-[10px] border-amber-200 text-amber-600 bg-amber-50">PREMIUM</Badge>
-            </div>
+          <FeatureGate featureKey="widget.card_styling" showBadge={false}>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-2">
+                  <SectionHeader icon={Palette} title="Card Styling" />
+                  <FeatureIndicator featureKey="widget.card_styling" />
+              </div>
             
             <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
                  <div className="flex items-center gap-2">
@@ -1444,16 +1449,18 @@ const WidgetTab = ({
                     </div>
                  </div>
             </div>
-          </div>
+            </div>
+          </FeatureGate>
 
           <Separator className="bg-slate-100" />
 
           {/* 5. Motion & Effects */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-               <SectionHeader icon={Sparkles} title="Motion & Effects" />
-               <Badge variant="outline" className="text-[10px] border-amber-200 text-amber-600 bg-amber-50">PREMIUM</Badge>
-            </div>
+          <FeatureGate featureKey="widget.motion_effects" showBadge={false}>
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                 <SectionHeader icon={Sparkles} title="Motion & Effects" />
+                 <FeatureIndicator featureKey="widget.motion_effects" />
+              </div>
             
             <div className="space-y-6">
                {/* Smooth Continuous Scroll - NEW */}
@@ -1589,101 +1596,102 @@ const WidgetTab = ({
                   />
                </div>
             </div>
-          </div>
+            </div>
+          </FeatureGate>
 
           <Separator className="bg-slate-100" />
 
-          {/* 6. Branding Control - NEW PRO FEATURE */}
-          <div className="space-y-4">
-             <div className="flex items-center justify-between mb-2">
-                <SectionHeader icon={Crown} title="Branding" />
-                <Badge className="text-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-0 shadow-sm flex items-center gap-1 px-2 py-0.5">
-                   <Star className="w-2.5 h-2.5 fill-current" /> PRO
-                </Badge>
-             </div>
-             
-             <div className={`p-4 rounded-xl border transition-all duration-300 ${!widgetSettings.showBranding ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
-                 <div className="flex items-center justify-between">
-                     <div className="space-y-0.5">
-                         <Label className="text-sm font-semibold text-slate-800">Remove Branding (Pro)</Label>
-                         <p className="text-[10px] text-slate-500">Hide "Powered by TrustFlow" badge</p>
-                     </div>
-                     <ToggleSwitch 
-                        isOn={!widgetSettings.showBranding} 
-                        onToggle={() => {
-                            console.log('DEBUG: Toggling branding visibility');
-                            setWidgetSettings({...widgetSettings, showBranding: !widgetSettings.showBranding});
-                        }}
-                     />
-                 </div>
-             </div>
-          </div>
+          {/* 6. Branding Control - Starter Feature */}
+          <FeatureGate featureKey="widget.remove_branding" showBadge={false}>
+            <div className="space-y-4">
+               <div className="flex items-center justify-between mb-2">
+                  <SectionHeader icon={Crown} title="Branding" />
+                  <FeatureIndicator featureKey="widget.remove_branding" />
+               </div>
+               
+               <div className={`p-4 rounded-xl border transition-all duration-300 ${!widgetSettings.showBranding ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
+                   <div className="flex items-center justify-between">
+                       <div className="space-y-0.5">
+                           <Label className="text-sm font-semibold text-slate-800">Remove Branding</Label>
+                           <p className="text-[10px] text-slate-500">Hide "Powered by TrustFlow" badge</p>
+                       </div>
+                       <ToggleSwitch 
+                          isOn={!widgetSettings.showBranding} 
+                          onToggle={() => {
+                              console.log('DEBUG: Toggling branding visibility');
+                              setWidgetSettings({...widgetSettings, showBranding: !widgetSettings.showBranding});
+                          }}
+                       />
+                   </div>
+               </div>
+            </div>
+          </FeatureGate>
 
           <Separator className="bg-slate-100" />
 
-          {/* 7. See More Button - PRO Feature */}
-          <div className="space-y-4">
-             <div className="flex items-center justify-between mb-2">
-                <SectionHeader icon={ExternalLink} title="See More Button" />
-                <Badge className="text-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-0 shadow-sm flex items-center gap-1 px-2 py-0.5">
-                   <Star className="w-2.5 h-2.5 fill-current" /> PRO
-                </Badge>
-             </div>
-             
-             <div className={`p-4 rounded-xl border transition-all duration-300 ${widgetSettings.seeMoreEnabled ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
-                 {/* Enable/Disable Toggle */}
-                 <div className="flex items-center justify-between mb-4">
-                     <div className="space-y-0.5">
-                         <Label className="text-sm font-semibold text-slate-800">Enable See More Button</Label>
-                         <p className="text-[10px] text-slate-500">Show button below testimonials</p>
-                     </div>
-                     <ToggleSwitch 
-                        isOn={widgetSettings.seeMoreEnabled !== false} 
-                        onToggle={() => {
-                            console.log('DEBUG: Toggling See More button visibility');
-                            setWidgetSettings({...widgetSettings, seeMoreEnabled: !(widgetSettings.seeMoreEnabled !== false)});
-                        }}
-                     />
-                 </div>
+          {/* 7. Custom Action Button - Starter Feature */}
+          <FeatureGate featureKey="widget.custom_button" showBadge={false}>
+            <div className="space-y-4">
+               <div className="flex items-center justify-between mb-2">
+                  <SectionHeader icon={ExternalLink} title="Custom Action Button" />
+                  <FeatureIndicator featureKey="widget.custom_button" />
+               </div>
+               
+               <div className={`p-4 rounded-xl border transition-all duration-300 ${widgetSettings.seeMoreEnabled ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
+                   {/* Enable/Disable Toggle */}
+                   <div className="flex items-center justify-between mb-4">
+                       <div className="space-y-0.5">
+                           <Label className="text-sm font-semibold text-slate-800">Enable Action Button</Label>
+                           <p className="text-[10px] text-slate-500">Show button below testimonials</p>
+                       </div>
+                       <ToggleSwitch 
+                          isOn={widgetSettings.seeMoreEnabled !== false} 
+                          onToggle={() => {
+                              console.log('DEBUG: Toggling Action button visibility');
+                              setWidgetSettings({...widgetSettings, seeMoreEnabled: !(widgetSettings.seeMoreEnabled !== false)});
+                          }}
+                       />
+                   </div>
 
-                 {/* Collapsible Settings */}
-                 <AnimatePresence>
-                    {widgetSettings.seeMoreEnabled !== false && (
-                        <motion.div 
-                            initial={{ height: 0, opacity: 0 }} 
-                            animate={{ height: 'auto', opacity: 1 }} 
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden space-y-4 pt-2 border-t border-violet-200/50"
-                        >
-                            <div className="space-y-2">
-                                <Label className="text-xs text-slate-500">Button Text</Label>
-                                <Input 
-                                    value={widgetSettings.seeMoreButtonText || 'See More'} 
-                                    onChange={(e) => setWidgetSettings({...widgetSettings, seeMoreButtonText: e.target.value})}
-                                    className="h-8 text-xs bg-white"
-                                    placeholder="See More"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs text-slate-500 flex items-center gap-1">
-                                    <LinkIcon className="w-3 h-3" /> Redirect Link
-                                </Label>
-                                <Input 
-                                    value={widgetSettings.seeMoreButtonLink || '#'} 
-                                    onChange={(e) => {
-                                        console.log('DEBUG: See More Link updated to:', e.target.value);
-                                        setWidgetSettings({...widgetSettings, seeMoreButtonLink: e.target.value});
-                                    }}
-                                    className="h-8 text-xs bg-white"
-                                    placeholder="https://example.com/testimonials"
-                                />
-                                <p className="text-[10px] text-slate-400">Where users go when they click the button on Wall of Love</p>
-                            </div>
-                        </motion.div>
-                    )}
-                 </AnimatePresence>
-             </div>
-          </div>
+                   {/* Collapsible Settings */}
+                   <AnimatePresence>
+                      {widgetSettings.seeMoreEnabled !== false && (
+                          <motion.div 
+                              initial={{ height: 0, opacity: 0 }} 
+                              animate={{ height: 'auto', opacity: 1 }} 
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden space-y-4 pt-2 border-t border-violet-200/50"
+                          >
+                              <div className="space-y-2">
+                                  <Label className="text-xs text-slate-500">Button Text</Label>
+                                  <Input 
+                                      value={widgetSettings.seeMoreButtonText || 'See More'} 
+                                      onChange={(e) => setWidgetSettings({...widgetSettings, seeMoreButtonText: e.target.value})}
+                                      className="h-8 text-xs bg-white"
+                                      placeholder="See More"
+                                  />
+                              </div>
+                              <div className="space-y-2">
+                                  <Label className="text-xs text-slate-500 flex items-center gap-1">
+                                      <LinkIcon className="w-3 h-3" /> Redirect Link
+                                  </Label>
+                                  <Input 
+                                      value={widgetSettings.seeMoreButtonLink || '#'} 
+                                      onChange={(e) => {
+                                          console.log('DEBUG: See More Link updated to:', e.target.value);
+                                          setWidgetSettings({...widgetSettings, seeMoreButtonLink: e.target.value});
+                                      }}
+                                      className="h-8 text-xs bg-white"
+                                      placeholder="https://example.com/testimonials"
+                                  />
+                                  <p className="text-[10px] text-slate-400">Where users go when they click the button on Wall of Love</p>
+                              </div>
+                          </motion.div>
+                      )}
+                   </AnimatePresence>
+               </div>
+            </div>
+          </FeatureGate>
 
         </CardContent>
       </Card>

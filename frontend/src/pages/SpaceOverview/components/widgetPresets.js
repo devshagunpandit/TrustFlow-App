@@ -1287,6 +1287,21 @@ export const WIDGET_PRESETS = [
 
 // === COMBO PRESETS (Preset + Card Layout Combinations) ===
 export const COMBO_PRESETS = [
+  // Default combo for free users
+  {
+    id: 'combo-default',
+    name: 'TrustFlow Default',
+    description: 'Clean classic layout with professional cards',
+    presetId: 'default',
+    cardStyle: 'default',
+    thumbnail: 'minimalist',
+    category: 'default',
+    isDefault: true,
+    isPro: false,
+    isPremium: false,
+    customHeading: 'What Our Customers Say',
+    customSubheading: 'Real testimonials from real people'
+  },
   {
     id: 'combo-social-twitter',
     name: 'Social Media Pro',
@@ -1396,6 +1411,7 @@ export const COMBO_PRESETS = [
 // === COMBO PRESET CATEGORIES ===
 export const COMBO_CATEGORIES = [
   { id: 'all', name: 'All Combos', icon: 'Sparkles' },
+  { id: 'default', name: 'Default', icon: 'Zap' },
   { id: 'social', name: 'Social', icon: 'MessageCircle' },
   { id: 'professional', name: 'Professional', icon: 'Briefcase' },
   { id: 'premium', name: 'Premium', icon: 'Crown' },

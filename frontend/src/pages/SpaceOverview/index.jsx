@@ -7,11 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { 
-  ArrowLeft, Copy, ExternalLink, Inbox, Edit, Code, Settings, Loader2, Share2, BarChart3, Sparkles 
+  ArrowLeft, Copy, ExternalLink, Inbox, Edit, Code, Settings, Loader2, Share2, BarChart3, Sparkles, Lock 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 import { v4 as uuidv4 } from 'uuid'; 
+import { FeatureGate, PlanBadge, FeatureIndicator } from '@/components/FeatureGate';
+import { useFeature } from '@/hooks/useFeature'; 
 
 // Import Sub-components
 import InboxTab from './components/InboxTab';
@@ -401,7 +403,9 @@ const SpaceOverview = () => {
             </TabsContent>
 
             <TabsContent value="roi-dashboard" className="mt-0">
-              <CTADashboardTab spaceId={spaceId} />
+              <FeatureGate featureKey="advanced.cta">
+                <CTADashboardTab spaceId={spaceId} />
+              </FeatureGate>
             </TabsContent>
 
             <TabsContent value="edit-form" className="mt-0">
@@ -414,7 +418,9 @@ const SpaceOverview = () => {
             </TabsContent>
 
             <TabsContent value="share" className="mt-0">
-             <ShareTab space={{ ...space, ...formSettings }} />
+              <FeatureGate featureKey="widget.share_qr">
+                <ShareTab space={{ ...space, ...formSettings }} />
+              </FeatureGate>
             </TabsContent>
 
             <TabsContent value="widget" className="mt-0">
