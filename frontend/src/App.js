@@ -35,6 +35,8 @@ const KNOWN_DOMAINS = [
   'www.trustflow.app',
   'trust-flow-app.vercel.app',
   'proofwalls.preview.emergentagent.com',
+  'trustwall.live',
+  'www.trustwall.live'
 ];
 
 // Check if current hostname is a custom domain
