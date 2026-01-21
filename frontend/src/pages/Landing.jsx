@@ -99,14 +99,14 @@ const Landing = () => {
   };
 
   // Demo data
-  const presetNames = ['TrustFlow Default', 'Dark Elegance', 'Violet Dream', 'Ocean Breeze'];
+  const presetNames = ['TrustWall Default', 'Dark Elegance', 'Violet Dream', 'Ocean Breeze'];
   const cardLayouts = ['Classic', 'Twitter Style', 'Quote Card', 'Modern Split'];
 
   const demoTestimonials = [
-    { id: 1, name: 'Sarah Johnson', role: 'CEO, TechStart', content: 'TrustFlow transformed how we collect testimonials. Our conversion rate increased by 40%!', rating: 5, avatar: 'https://i.pravatar.cc/100?img=1' },
-    { id: 2, name: 'Michael Chen', role: 'Freelance Designer', content: 'As a freelancer, social proof is everything. TrustFlow makes it so easy to collect and showcase client reviews.', rating: 5, avatar: 'https://i.pravatar.cc/100?img=3' },
+    { id: 1, name: 'Sarah Johnson', role: 'CEO, TechStart', content: 'TrustWall transformed how we collect testimonials. Our conversion rate increased by 40%!', rating: 5, avatar: 'https://i.pravatar.cc/100?img=1' },
+    { id: 2, name: 'Michael Chen', role: 'Freelance Designer', content: 'As a freelancer, social proof is everything. TrustWall makes it so easy to collect and showcase client reviews.', rating: 5, avatar: 'https://i.pravatar.cc/100?img=3' },
     { id: 3, name: 'Emily Rodriguez', role: 'Marketing Director', content: 'The video testimonial feature is a game-changer. Authentic video reviews convert way better than text.', rating: 5, avatar: 'https://i.pravatar.cc/100?img=5' },
-    { id: 4, name: 'David Kim', role: 'Agency Owner', content: 'We use TrustFlow for all our client projects. The embeddable widget is beautiful and super easy to customize.', rating: 5, avatar: 'https://i.pravatar.cc/100?img=8' },
+    { id: 4, name: 'David Kim', role: 'Agency Owner', content: 'We use TrustWall for all our client projects. The embeddable widget is beautiful and super easy to customize.', rating: 5, avatar: 'https://i.pravatar.cc/100?img=8' },
   ];
 
   return (
@@ -118,7 +118,7 @@ const Landing = () => {
             <Star className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
           </div>
           <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-            TrustFlow
+            TrustWall
           </span>
         </motion.div>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 sm:gap-4">
@@ -645,7 +645,7 @@ const Landing = () => {
       <section className="container mx-auto px-4 py-12 sm:py-20">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10 sm:mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Wall of Love</h2>
-          <p className="text-muted-foreground text-sm sm:text-lg">See what our users are saying about TrustFlow</p>
+          <p className="text-muted-foreground text-sm sm:text-lg">See what our users are saying about TrustWall</p>
         </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-7xl mx-auto">
@@ -748,7 +748,7 @@ const Landing = () => {
       <section className="container mx-auto px-4 py-12 sm:py-20">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-4xl mx-auto text-center p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-2xl shadow-violet-500/30">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Ready to Boost Your Conversions?</h2>
-          <p className="text-sm sm:text-lg opacity-90 mb-6 sm:mb-8">Join thousands of businesses using TrustFlow to showcase their social proof.</p>
+          <p className="text-sm sm:text-lg opacity-90 mb-6 sm:mb-8">Join thousands of businesses using TrustWall to showcase their social proof.</p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <Link to="/signup">
               <Button size="lg" className="w-full sm:w-auto bg-white text-violet-600 hover:bg-gray-100 text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">
@@ -772,7 +772,7 @@ const Landing = () => {
               <Star className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-              TrustFlow
+              TrustWall
             </span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
@@ -781,7 +781,7 @@ const Landing = () => {
             <a href="#" className="hover:text-foreground transition-colors">Terms</a>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            © 2026 TrustFlow. All rights reserved.
+            © 2026 TrustWall. All rights reserved.
           </p>
         </div>
       </footer>

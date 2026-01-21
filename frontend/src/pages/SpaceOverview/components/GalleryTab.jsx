@@ -497,7 +497,7 @@ const CardLayoutPreview = ({ layout, theme = 'light' }) => {
         );
         
       default:
-        // Default TrustFlow style
+        // Default TrustWall style
         return (
           <div className={`${bgClass} rounded-lg p-3 h-full flex flex-col shadow-sm border ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
             {/* Rating top */}
@@ -793,7 +793,7 @@ const GalleryTab = ({
       return (
         <div className={`${positionClasses[position] || positionClasses['top-right']} z-10`}>
           <span className={`text-[7px] sm:text-[8px] px-1.5 sm:px-2 py-0.5 rounded-full inline-flex items-center gap-0.5 sm:gap-1 backdrop-blur-sm border ${isDark ? 'bg-slate-800/80 text-slate-300 border-slate-700' : 'bg-white/80 text-slate-600 border-slate-200'}`}>
-            <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-violet-500 text-violet-500" /> TrustFlow
+            <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-violet-500 text-violet-500" /> TrustWall
           </span>
         </div>
       );

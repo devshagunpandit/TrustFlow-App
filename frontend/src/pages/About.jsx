@@ -130,7 +130,7 @@ const About = () => {
                 Our Story
               </Badge>
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-6">
-                Why We Built TrustFlow
+                Why We Built TrustWall
               </h2>
             </motion.div>
 

@@ -140,7 +140,7 @@ const HeroSection = () => {
                 </div>
                 <div className="flex-1 mx-4">
                   <div className="max-w-md mx-auto bg-white dark:bg-slate-700 rounded-lg px-4 py-1.5 text-sm text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-600">
-                    trustflow.app/dashboard
+                    trustwall.app/dashboard
                   </div>
                 </div>
               </div>

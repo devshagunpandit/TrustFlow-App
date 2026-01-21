@@ -101,7 +101,7 @@ export const WIDGET_PRESETS = [
   // 1. DEFAULT - Must always be first
   {
     id: 'default',
-    name: 'TrustFlow Default',
+    name: 'TrustWall Default',
     description: 'Clean, professional layout - our recommended starting point',
     category: 'minimal',
     thumbnail: 'minimalist',
@@ -1290,7 +1290,7 @@ export const COMBO_PRESETS = [
   // Default combo for free users
   {
     id: 'combo-default',
-    name: 'TrustFlow Default',
+    name: 'TrustWall Default',
     description: 'Clean classic layout with professional cards',
     presetId: 'default',
     cardStyle: 'default',
@@ -1421,10 +1421,10 @@ export const COMBO_CATEGORIES = [
 
 // === CARD LAYOUT PRESETS ===
 export const CARD_LAYOUT_PRESETS = [
-  // 1. DEFAULT - Current TrustFlow layout
+  // 1. DEFAULT - Current TrustWall layout
   {
     id: 'default',
-    name: 'TrustFlow Classic',
+    name: 'TrustWall Classic',
     description: 'Stars on top, content in middle, profile at bottom',
     category: 'default',
     icon: '⭐',

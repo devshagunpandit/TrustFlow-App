@@ -212,7 +212,7 @@ const CardLayoutsFeatureUI = () => {
             ))}
           </div>
           <p className="text-slate-700 dark:text-slate-300 text-sm mb-4 leading-relaxed">
-            "TrustFlow has completely transformed how we collect and display customer feedback. Highly recommended!"
+            "TrustWall has completely transformed how we collect and display customer feedback. Highly recommended!"
           </p>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-indigo-400 flex items-center justify-center">
@@ -1030,7 +1030,7 @@ const additionalSections = [
   {
     id: 'webhooks',
     title: 'Webhooks Integration',
-    description: 'Connect TrustFlow to your favorite tools. Get real-time notifications when new testimonials arrive.',
+    description: 'Connect TrustWall to your favorite tools. Get real-time notifications when new testimonials arrive.',
     features: [
       { title: 'Real-time Events', description: 'Instant notifications for new testimonials.', icon: 'Zap' },
       { title: 'Custom Endpoints', description: 'Send data to any URL you choose.', icon: 'Globe' },

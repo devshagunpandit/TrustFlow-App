@@ -11,18 +11,18 @@
 // COMPANY INFORMATION
 // =============================================================================
 export const companyInfo = {
-  name: 'TrustFlow',
+  name: 'TrustWall',
   tagline: 'Social Proof on Autopilot',
   description: 'Collect and display beautiful testimonials in minutes',
   foundedYear: 2024,
-  email: 'hello@trustflow.app',
-  supportEmail: 'support@trustflow.app',
-  website: 'https://trustflow.app',
+  email: 'hello@trustwall.app',
+  supportEmail: 'support@trustwall.app',
+  website: 'https://trustwall.app',
   socialLinks: {
-    twitter: 'https://twitter.com/trustflowapp',
-    linkedin: 'https://linkedin.com/company/trustflow',
-    github: 'https://github.com/trustflow',
-    youtube: 'https://youtube.com/@trustflow',
+    twitter: 'https://twitter.com/trustwallapp',
+    linkedin: 'https://linkedin.com/company/trustwall',
+    github: 'https://github.com/trustwall',
+    youtube: 'https://youtube.com/@trustwall',
   },
 };
 
@@ -49,7 +49,7 @@ export const footerLinks = {
   ],
   company: [
     { label: 'About Us', href: '/about' },
-    { label: 'Contact', href: 'mailto:hello@trustflow.app' },
+    { label: 'Contact', href: 'mailto:hello@trustwall.app' },
   ],
   legal: [
     { label: 'Privacy Policy', href: '/privacy' },
@@ -303,7 +303,7 @@ export const testimonials = [
     role: 'CEO',
     company: 'TechStart',
     avatar: 'https://i.pravatar.cc/100?img=1',
-    content: 'TrustFlow transformed how we collect testimonials. Our conversion rate increased by 40% after adding the Wall of Love to our website!',
+    content: 'TrustWall transformed how we collect testimonials. Our conversion rate increased by 40% after adding the Wall of Love to our website!',
     rating: 5,
     type: 'text',
     featured: true,
@@ -314,7 +314,7 @@ export const testimonials = [
     role: 'Freelance Designer',
     company: 'Self-employed',
     avatar: 'https://i.pravatar.cc/100?img=3',
-    content: 'As a freelancer, social proof is everything. TrustFlow makes it so easy to collect and showcase client reviews.',
+    content: 'As a freelancer, social proof is everything. TrustWall makes it so easy to collect and showcase client reviews.',
     rating: 5,
     type: 'text',
     featured: true,
@@ -336,7 +336,7 @@ export const testimonials = [
     role: 'Agency Owner',
     company: 'Digital Spark',
     avatar: 'https://i.pravatar.cc/100?img=8',
-    content: 'We use TrustFlow for all our client projects. The embeddable widget is beautiful and super easy to customize.',
+    content: 'We use TrustWall for all our client projects. The embeddable widget is beautiful and super easy to customize.',
     rating: 5,
     type: 'text',
     featured: true,
@@ -358,7 +358,7 @@ export const testimonials = [
     role: 'Founder',
     company: 'LaunchPad',
     avatar: 'https://i.pravatar.cc/100?img=11',
-    content: 'Our landing page conversions went up 25% within the first week of adding TrustFlow widgets. Incredible ROI!',
+    content: 'Our landing page conversions went up 25% within the first week of adding TrustWall widgets. Incredible ROI!',
     rating: 5,
     type: 'text',
     featured: false,
@@ -394,7 +394,7 @@ export const featuresPageData = {
   hero: {
     badge: 'Powerful Features',
     headline: 'Everything you need to build trust',
-    subheadline: 'From collection to display, TrustFlow provides all the tools you need to leverage social proof effectively.',
+    subheadline: 'From collection to display, TrustWall provides all the tools you need to leverage social proof effectively.',
   },
   sections: [
     {
@@ -615,7 +615,7 @@ export const featuresPageData = {
 // DEMO PAGE DATA
 // =============================================================================
 export const demoPageData = {
-  headline: 'Try TrustFlow Live',
+  headline: 'Try TrustWall Live',
   subheadline: 'Customize and preview the widget in real-time. No signup required.',
   defaultSettings: {
     darkMode: false,
@@ -673,7 +673,7 @@ export const legalPageData = {
 // =============================================================================
 export const ctaSection = {
   headline: 'Ready to build trust?',
-  subheadline: 'Join thousands of businesses using TrustFlow to showcase social proof and boost conversions.',
+  subheadline: 'Join thousands of businesses using TrustWall to showcase social proof and boost conversions.',
   primaryCTA: {
     label: 'Start for Free',
     href: '/signup',
@@ -689,38 +689,38 @@ export const ctaSection = {
 // =============================================================================
 export const seoData = {
   home: {
-    title: 'TrustFlow - Collect & Display Beautiful Testimonials',
+    title: 'TrustWall - Collect & Display Beautiful Testimonials',
     description: 'Create dedicated spaces for your projects, collect stunning text & video testimonials, and showcase them on your website with beautiful widgets.',
     keywords: 'testimonials, social proof, reviews, video testimonials, wall of love, customer feedback',
   },
   features: {
-    title: 'Features - TrustFlow',
-    description: 'Discover all the powerful features TrustFlow offers for collecting and displaying customer testimonials.',
+    title: 'Features - TrustWall',
+    description: 'Discover all the powerful features TrustWall offers for collecting and displaying customer testimonials.',
     keywords: 'testimonial features, video collection, widget embed, social proof tools',
   },
   pricing: {
-    title: 'Pricing - TrustFlow',
+    title: 'Pricing - TrustWall',
     description: 'Simple, transparent pricing for businesses of all sizes. Start free and upgrade as you grow.',
-    keywords: 'testimonial pricing, social proof plans, TrustFlow pricing',
+    keywords: 'testimonial pricing, social proof plans, TrustWall pricing',
   },
   demo: {
-    title: 'Live Demo - TrustFlow',
-    description: 'Try TrustFlow live without signing up. Customize and preview testimonial widgets in real-time.',
-    keywords: 'testimonial demo, widget preview, TrustFlow demo',
+    title: 'Live Demo - TrustWall',
+    description: 'Try TrustWall live without signing up. Customize and preview testimonial widgets in real-time.',
+    keywords: 'testimonial demo, widget preview, TrustWall demo',
   },
   wallOfLove: {
-    title: 'Wall of Love - TrustFlow',
-    description: 'See what our customers are saying about TrustFlow. Real testimonials from real users.',
-    keywords: 'customer testimonials, reviews, TrustFlow reviews',
+    title: 'Wall of Love - TrustWall',
+    description: 'See what our customers are saying about TrustWall. Real testimonials from real users.',
+    keywords: 'customer testimonials, reviews, TrustWall reviews',
   },
   privacy: {
-    title: 'Privacy Policy - TrustFlow',
-    description: 'Learn how TrustFlow collects, uses, and protects your personal information.',
+    title: 'Privacy Policy - TrustWall',
+    description: 'Learn how TrustWall collects, uses, and protects your personal information.',
     keywords: 'privacy policy, data protection, GDPR',
   },
   terms: {
-    title: 'Terms of Service - TrustFlow',
-    description: 'Read the terms and conditions for using TrustFlow services.',
+    title: 'Terms of Service - TrustWall',
+    description: 'Read the terms and conditions for using TrustWall services.',
     keywords: 'terms of service, terms and conditions, legal',
   },
 };

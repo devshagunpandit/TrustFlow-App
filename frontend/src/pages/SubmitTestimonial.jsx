@@ -1284,7 +1284,7 @@ const SubmitTestimonial = ({ customSlug }) => {
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     ) : (
-                      /* Default TrustFlow Promo */
+                      /* Default TrustWall Promo */
                       <>
                         <p className="text-sm text-slate-700 dark:text-slate-300">Want to collect testimonials like this?</p>
                         <a href="/" target="_blank" rel="noopener noreferrer" className="text-violet-600 font-medium hover:underline">Create your own Wall of Love →</a>
@@ -1301,7 +1301,7 @@ const SubmitTestimonial = ({ customSlug }) => {
         {/* Footer - Respects hide_branding */}
         {!formSettings.extra_settings?.hide_branding && (
           <div className="text-center mt-6">
-            <a href="/" target="_blank" rel="noopener noreferrer" className={`text-sm hover:underline transition-colors ${themeClasses.textMuted}`}>Powered by <span className="font-medium text-violet-600">TrustFlow</span></a>
+            <a href="/" target="_blank" rel="noopener noreferrer" className={`text-sm hover:underline transition-colors ${themeClasses.textMuted}`}>Powered by <span className="font-medium text-violet-600">TrustWall</span></a>
           </div>
         )}
       </motion.div>

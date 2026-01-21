@@ -39,7 +39,7 @@ const FEATURE_INFO = {
   // Widget Features
   'widget.remove_branding': {
     name: 'Remove Branding',
-    description: 'Display testimonials without TrustFlow watermark for a clean, professional look.',
+    description: 'Display testimonials without TrustWall watermark for a clean, professional look.',
     icon: Crown,
     benefits: ['Professional appearance', 'Your brand only', 'White-label ready']
   },
@@ -83,7 +83,7 @@ const FEATURE_INFO = {
   },
   'edit_form.remove_branding': {
     name: 'Remove Branding',
-    description: 'Remove TrustFlow branding from your collection forms.',
+    description: 'Remove TrustWall branding from your collection forms.',
     icon: Shield,
     benefits: ['White-label ready', 'Professional forms', 'Your brand only']
   },

@@ -26,7 +26,7 @@ const PublicPricing = () => {
     {
       name: 'Free',
       icon: Zap,
-      description: 'Perfect for trying out TrustFlow',
+      description: 'Perfect for trying out TrustWall',
       monthlyPrice: 0,
       annualPrice: 0,
       color: 'slate',
@@ -38,7 +38,7 @@ const PublicPricing = () => {
         '1 Default widget preset',
         '1 Default card layout',
         'Basic embed widget',
-        'TrustFlow branding',
+        'TrustWall branding',
       ],
       limitations: [
         'No video testimonials',
@@ -65,7 +65,7 @@ const PublicPricing = () => {
         '4 Card layouts',
         '3 Combo packs',
         'Custom branding',
-        'Remove TrustFlow branding',
+        'Remove TrustWall branding',
         'Basic analytics',
       ],
       limitations: [
@@ -154,8 +154,8 @@ const PublicPricing = () => {
   // FAQs
   const faqs = [
     {
-      q: 'Can I try TrustFlow for free?',
-      a: 'Absolutely! Our Free plan gives you 1 space and 10 testimonials to try out TrustFlow. No credit card required.',
+      q: 'Can I try TrustWall for free?',
+      a: 'Absolutely! Our Free plan gives you 1 space and 10 testimonials to try out TrustWall. No credit card required.',
     },
     {
       q: 'Can I upgrade or downgrade anytime?',
@@ -174,8 +174,8 @@ const PublicPricing = () => {
       a: 'When you reach your limit, you won\'t be able to add new testimonials until you upgrade or delete existing ones. Your existing testimonials will continue to work normally.',
     },
     {
-      q: 'Can I use TrustFlow for client projects?',
-      a: 'Yes! Many agencies use TrustFlow for their clients. With the Pro plan, you get unlimited spaces - perfect for managing multiple client projects.',
+      q: 'Can I use TrustWall for client projects?',
+      a: 'Yes! Many agencies use TrustWall for their clients. With the Pro plan, you get unlimited spaces - perfect for managing multiple client projects.',
     },
   ];
 
@@ -208,7 +208,7 @@ const PublicPricing = () => {
             <Star className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
           </div>
           <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-            TrustFlow
+            TrustWall
           </span>
         </Link>
         <div className="flex items-center gap-2 sm:gap-4">
@@ -559,7 +559,7 @@ const PublicPricing = () => {
             Ready to Transform Your Social Proof?
           </h2>
           <p className="text-sm sm:text-lg opacity-90 mb-6 sm:mb-8 max-w-2xl mx-auto">
-            Join thousands of businesses using TrustFlow to collect and display beautiful testimonials.
+            Join thousands of businesses using TrustWall to collect and display beautiful testimonials.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <Link to="/signup">
@@ -585,7 +585,7 @@ const PublicPricing = () => {
               <Star className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-              TrustFlow
+              TrustWall
             </span>
           </Link>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
@@ -594,7 +594,7 @@ const PublicPricing = () => {
             <a href="#" className="hover:text-foreground transition-colors">Terms</a>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            © 2026 TrustFlow. All rights reserved.
+            © 2026 TrustWall. All rights reserved.
           </p>
         </div>
       </footer>

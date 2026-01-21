@@ -148,11 +148,11 @@ const ROIDashboard = () => {
                 <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-violet-400" />
-                    <span className="text-white/70">Before TrustFlow</span>
+                    <span className="text-white/70">Before TrustWall</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-green-400" />
-                    <span className="text-white/70">After TrustFlow</span>
+                    <span className="text-white/70">After TrustWall</span>
                   </div>
                 </div>
               </motion.div>

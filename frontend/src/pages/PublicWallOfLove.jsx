@@ -94,7 +94,7 @@ const PublicWallOfLove = () => {
             </h1>
             
             <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 mb-8 max-w-2xl mx-auto">
-              Don't just take our word for it. Here's what our amazing customers have to say about TrustFlow.
+              Don't just take our word for it. Here's what our amazing customers have to say about TrustWall.
             </p>
 
             {/* Actions */}
@@ -230,7 +230,7 @@ const PublicWallOfLove = () => {
               Share Your Experience
             </DialogTitle>
             <DialogDescription>
-              We'd love to hear what you think about TrustFlow!
+              We'd love to hear what you think about TrustWall!
             </DialogDescription>
           </DialogHeader>
 
@@ -322,7 +322,7 @@ const PublicWallOfLove = () => {
                     id="content"
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    placeholder="Tell us about your experience with TrustFlow..."
+                    placeholder="Tell us about your experience with TrustWall..."
                     rows={4}
                     required
                   />

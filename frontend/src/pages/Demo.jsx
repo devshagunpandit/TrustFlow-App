@@ -60,7 +60,7 @@ const DemoPage = () => {
 
   // Preset data
   const presets = [
-    { name: 'TrustFlow Default', bg: 'bg-slate-50', text: 'text-slate-900', card: 'bg-white border-slate-200' },
+    { name: 'TrustWall Default', bg: 'bg-slate-50', text: 'text-slate-900', card: 'bg-white border-slate-200' },
     { name: 'Dark Elegance', bg: 'bg-slate-900', text: 'text-white', card: 'bg-slate-800 border-slate-700' },
     { name: 'Violet Dream', bg: 'bg-gradient-to-br from-violet-500 to-purple-600', text: 'text-white', card: 'bg-white/10 backdrop-blur border-white/20' },
     { name: 'Ocean Breeze', bg: 'bg-gradient-to-br from-cyan-500 to-blue-600', text: 'text-white', card: 'bg-white/10 backdrop-blur border-white/20' },
@@ -398,7 +398,7 @@ const DemoPage = () => {
                   <CardContent className="p-3 sm:p-6">
                     <pre className="text-xs sm:text-sm font-mono overflow-x-auto whitespace-pre-wrap break-all">
                       <code className="text-violet-400">
-                        {'<script src="https://trustflow.app/embed.js" data-space-id="your-space-id"></script>'}
+                        {'<script src="https://trustwall.app/embed.js" data-space-id="your-space-id"></script>'}
                       </code>
                     </pre>
                   </CardContent>

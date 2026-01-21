@@ -28,7 +28,7 @@ const FrameworkLogos = () => {
             Works with your favorite stack
           </h2>
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Integrate TrustFlow with any platform in minutes. Native support for all major frameworks.
+            Integrate TrustWall with any platform in minutes. Native support for all major frameworks.
           </p>
         </motion.div>
 
