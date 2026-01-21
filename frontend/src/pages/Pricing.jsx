@@ -16,11 +16,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
 import { 
   Check, X, Crown, Sparkles, Zap, ArrowRight, Shield, 
   Star, Rocket, MessageSquare, Video, Users, Globe,
   Webhook, Palette, Layout, Bell, ChevronDown, ChevronUp,
-  ArrowLeft, Heart, Award, TrendingUp, Lock, ExternalLink
+  ArrowLeft, Heart, Award, TrendingUp, Lock, ExternalLink, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlanCheck } from '@/hooks/useFeature';
@@ -174,6 +175,7 @@ const PricingPage = () => {
   const [showComparison, setShowComparison] = useState(false);
   const [dbPlans, setDbPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState(null); // Track which plan is loading
   
   // Get highlighted plan from URL params
   const highlightedPlan = searchParams.get('highlight') || 'starter';
@@ -238,6 +240,9 @@ const PricingPage = () => {
           usd: Math.round(dbPlan.amount_usd * 10), // 10 months = yearly (2 free)
           inr: Math.round(dbPlan.amount_inr * 10)
         },
+        // Lemon Squeezy Variant IDs from database
+        lemonSqueezyVariantIdMonthly: dbPlan.lemon_squeezy_variant_id_monthly || null,
+        lemonSqueezyVariantIdYearly: dbPlan.lemon_squeezy_variant_id_yearly || null,
         popular: config.popular,
         cta: config.cta,
         ctaVariant: config.ctaVariant,
@@ -263,22 +268,106 @@ const PricingPage = () => {
     };
   };
 
-  // Handle plan selection
-  const handleSelectPlan = (planId) => {
+  // Handle plan selection - Lemon Squeezy Checkout Integration
+  const handleSelectPlan = async (planId) => {
     if (planId === 'free') return;
     
-    // Trigger confetti on upgrade click
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-
-    // TODO: Integrate with Stripe/Razorpay
-    console.log('Selected plan:', planId, isYearly ? 'yearly' : 'monthly');
+    // Find the selected plan from our plans array
+    const selectedPlan = plans.find(p => p.id === planId);
+    if (!selectedPlan) {
+      toast.error('Plan not found. Please refresh and try again.');
+      return;
+    }
     
-    // For now, show a toast or redirect to checkout
-    // navigate(`/checkout?plan=${planId}&billing=${isYearly ? 'yearly' : 'monthly'}`);
+    // Check if user is logged in
+    if (!user) {
+      toast.error('Please log in to upgrade your plan.');
+      navigate('/login?redirect=/pricing');
+      return;
+    }
+    
+    // Get the correct variant ID based on billing cycle
+    const variantId = isYearly 
+      ? selectedPlan.lemonSqueezyVariantIdYearly 
+      : selectedPlan.lemonSqueezyVariantIdMonthly;
+    
+    // Validate variant ID exists
+    if (!variantId) {
+      toast.error(
+        `${selectedPlan.name} ${isYearly ? 'yearly' : 'monthly'} plan is not available yet. Please try another option.`,
+        { duration: 5000 }
+      );
+      return;
+    }
+    
+    // Set loading state for this specific plan
+    setCheckoutLoading(planId);
+    
+    try {
+      // Trigger confetti on upgrade click for positive UX
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+      
+      // API endpoint - use environment variable or fallback
+      const API_BASE = process.env.REACT_APP_BACKEND_URL || 
+                       process.env.REACT_APP_API_URL || 
+                       'https://trust-flow-app.vercel.app';
+      
+      // Create checkout session with Lemon Squeezy
+      const response = await fetch(`${API_BASE}/api/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan_id: planId,
+          variant_id: variantId,
+          user_id: user.id,
+          user_email: user.email,
+          billing_cycle: isYearly ? 'yearly' : 'monthly'
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to create checkout session');
+      }
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        // Show success toast before redirect
+        toast.success('Redirecting to secure checkout...', { duration: 2000 });
+        
+        // Small delay for toast visibility, then redirect
+        setTimeout(() => {
+          window.location.href = data.url;
+        }, 500);
+      } else {
+        throw new Error('No checkout URL received');
+      }
+      
+    } catch (error) {
+      console.error('Checkout error:', error);
+      
+      // User-friendly error messages
+      if (error.message.includes('not configured')) {
+        toast.error('Payment service is being set up. Please try again later.', { duration: 5000 });
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        toast.error('Connection error. Please check your internet and try again.', { duration: 5000 });
+      } else {
+        toast.error(
+          error.message || 'Unable to start checkout. Please try again.',
+          { duration: 5000 }
+        );
+      }
+    } finally {
+      // Clear loading state
+      setCheckoutLoading(null);
+    }
   };
 
   const isLoading = loading || planLoading;
@@ -421,17 +510,22 @@ const PricingPage = () => {
                     <CardContent>
                       {/* CTA Button */}
                       <Button
-                        className={`w-full mb-6 ${
+                        className={`w-full mb-6 min-h-[44px] touch-manipulation ${
                           isCurrentPlan 
                             ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 cursor-default' 
                             : plan.id === 'free'
                               ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
                               : `bg-gradient-to-r ${plan.gradient} hover:opacity-90 text-white shadow-lg`
                         }`}
-                        onClick={() => !isCurrentPlan && handleSelectPlan(plan.id)}
-                        disabled={isCurrentPlan}
+                        onClick={() => !isCurrentPlan && !checkoutLoading && handleSelectPlan(plan.id)}
+                        disabled={isCurrentPlan || checkoutLoading === plan.id}
                       >
-                        {isCurrentPlan ? (
+                        {checkoutLoading === plan.id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Processing...
+                          </>
+                        ) : isCurrentPlan ? (
                           <>
                             <Check className="w-4 h-4 mr-2" />
                             Current Plan

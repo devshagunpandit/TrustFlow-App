@@ -10,6 +10,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
+import hmac
+import hashlib
+import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -23,6 +26,10 @@ if not supabase_url or not supabase_key:
 
 supabase: Client = create_client(supabase_url, supabase_key)
 
+# Lemon Squeezy Configuration
+LEMON_SQUEEZY_API_KEY = os.environ.get('LEMON_SQUEEZY_API_KEY', '')
+LEMON_SQUEEZY_STORE_ID = os.environ.get('LEMON_SQUEEZY_STORE_ID', '')
+LEMON_SQUEEZY_WEBHOOK_SECRET = os.environ.get('LEMON_SQUEEZY_WEBHOOK_SECRET', '')
 
 # Create the main app
 app = FastAPI(title="TrustFlow API")
@@ -86,6 +93,14 @@ class TrackEventRequest(BaseModel):
 
 class CTASelectorUpdate(BaseModel):
     cta_selector: Optional[str] = None
+
+# --- Lemon Squeezy Models ---
+class LemonSqueezyCheckoutRequest(BaseModel):
+    plan_id: str
+    variant_id: str
+    user_id: str
+    user_email: str
+    billing_cycle: str = 'monthly'  # 'monthly' or 'yearly'
 
 # --- Routes ---
 
@@ -1086,6 +1101,394 @@ async def test_webhook(request: WebhookTestRequest):
             "request_payload": None,
             "response_body": None
         }
+
+
+# ============================================================
+# LEMON SQUEEZY PAYMENT INTEGRATION ROUTES
+# ============================================================
+
+@api_router.post("/create-checkout-session")
+async def create_lemon_squeezy_checkout(request: LemonSqueezyCheckoutRequest):
+    """
+    Create a Lemon Squeezy checkout session for subscription purchase.
+    
+    - Creates a checkout URL with user metadata embedded
+    - The variant_id determines which product/price is being purchased
+    - Custom data (user_id, plan_id) is passed through for webhook processing
+    """
+    try:
+        # Validate required configuration
+        if not LEMON_SQUEEZY_API_KEY:
+            logger.error("LEMON_SQUEEZY_API_KEY not configured")
+            raise HTTPException(
+                status_code=500, 
+                detail="Payment service not configured. Please contact support."
+            )
+        
+        if not LEMON_SQUEEZY_STORE_ID:
+            logger.error("LEMON_SQUEEZY_STORE_ID not configured")
+            raise HTTPException(
+                status_code=500, 
+                detail="Payment service not configured. Please contact support."
+            )
+        
+        # Validate variant_id
+        if not request.variant_id or request.variant_id.strip() == '':
+            logger.error(f"Invalid variant_id for plan {request.plan_id}")
+            raise HTTPException(
+                status_code=400, 
+                detail="This plan is not available for purchase. Please try another plan."
+            )
+        
+        # Validate user info
+        if not request.user_id or not request.user_email:
+            raise HTTPException(
+                status_code=400, 
+                detail="User authentication required. Please log in and try again."
+            )
+        
+        # Construct Lemon Squeezy checkout payload
+        # API Reference: https://docs.lemonsqueezy.com/api/checkouts
+        checkout_payload = {
+            "data": {
+                "type": "checkouts",
+                "attributes": {
+                    "checkout_data": {
+                        "email": request.user_email,
+                        "custom": {
+                            "user_id": request.user_id,
+                            "plan_id": request.plan_id,
+                            "billing_cycle": request.billing_cycle
+                        }
+                    },
+                    "product_options": {
+                        "enabled_variants": [int(request.variant_id)],
+                        "redirect_url": f"{os.environ.get('FRONTEND_URL', 'https://trustflow.app')}/dashboard?payment=success",
+                        "receipt_link_url": f"{os.environ.get('FRONTEND_URL', 'https://trustflow.app')}/dashboard"
+                    },
+                    "checkout_options": {
+                        "embed": False,
+                        "media": True,
+                        "logo": True,
+                        "desc": True,
+                        "discount": True,
+                        "button_color": "#7c3aed"  # TrustFlow violet brand color
+                    }
+                },
+                "relationships": {
+                    "store": {
+                        "data": {
+                            "type": "stores",
+                            "id": LEMON_SQUEEZY_STORE_ID
+                        }
+                    },
+                    "variant": {
+                        "data": {
+                            "type": "variants",
+                            "id": request.variant_id
+                        }
+                    }
+                }
+            }
+        }
+        
+        logger.info(f"Creating Lemon Squeezy checkout for user {request.user_id}, plan {request.plan_id}")
+        
+        # Make API request to Lemon Squeezy
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://api.lemonsqueezy.com/v1/checkouts",
+                json=checkout_payload,
+                headers={
+                    "Accept": "application/vnd.api+json",
+                    "Content-Type": "application/vnd.api+json",
+                    "Authorization": f"Bearer {LEMON_SQUEEZY_API_KEY}"
+                }
+            )
+            
+            if response.status_code == 201:
+                checkout_data = response.json()
+                checkout_url = checkout_data.get("data", {}).get("attributes", {}).get("url")
+                
+                if checkout_url:
+                    logger.info(f"Checkout created successfully for user {request.user_id}")
+                    return {"url": checkout_url, "status": "success"}
+                else:
+                    logger.error(f"No checkout URL in response: {checkout_data}")
+                    raise HTTPException(
+                        status_code=500, 
+                        detail="Payment service error. Please try again."
+                    )
+            else:
+                error_body = response.text
+                logger.error(f"Lemon Squeezy API error: {response.status_code} - {error_body}")
+                raise HTTPException(
+                    status_code=500, 
+                    detail="Unable to create checkout session. Please try again later."
+                )
+                
+    except HTTPException:
+        raise
+    except httpx.TimeoutException:
+        logger.error("Lemon Squeezy API timeout")
+        raise HTTPException(
+            status_code=504, 
+            detail="Payment service is temporarily unavailable. Please try again."
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error creating checkout: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail="An unexpected error occurred. Please try again."
+        )
+
+
+def verify_lemon_squeezy_signature(payload: bytes, signature: str, secret: str) -> bool:
+    """
+    Verify Lemon Squeezy webhook signature using HMAC SHA256.
+    
+    - The signature is in the 'X-Signature' header
+    - We compare it with HMAC SHA256 of the raw request body
+    """
+    if not secret:
+        logger.warning("LEMON_SQUEEZY_WEBHOOK_SECRET not configured - skipping verification")
+        return True  # Skip verification if secret not configured (dev mode)
+    
+    try:
+        expected_signature = hmac.new(
+            secret.encode('utf-8'),
+            payload,
+            hashlib.sha256
+        ).hexdigest()
+        
+        return hmac.compare_digest(expected_signature, signature)
+    except Exception as e:
+        logger.error(f"Signature verification error: {e}")
+        return False
+
+
+@api_router.post("/webhooks/lemonsqueezy")
+async def handle_lemon_squeezy_webhook(request: Request):
+    """
+    Handle Lemon Squeezy webhook events for subscription lifecycle.
+    
+    Events handled:
+    - subscription_created: New subscription activated
+    - subscription_updated: Plan changed, renewed, etc.
+    - subscription_cancelled: User cancelled subscription
+    - subscription_resumed: User resumed after pause
+    - subscription_expired: Subscription ended
+    - subscription_paused: Subscription paused
+    - order_created: One-time order completed (if applicable)
+    
+    Security:
+    - Validates X-Signature header using HMAC SHA256
+    - Returns 401 if signature is invalid
+    """
+    try:
+        # Get raw body for signature verification
+        raw_body = await request.body()
+        signature = request.headers.get("X-Signature", "")
+        
+        # Verify webhook signature
+        if LEMON_SQUEEZY_WEBHOOK_SECRET:
+            if not verify_lemon_squeezy_signature(raw_body, signature, LEMON_SQUEEZY_WEBHOOK_SECRET):
+                logger.warning("Invalid Lemon Squeezy webhook signature")
+                raise HTTPException(status_code=401, detail="Invalid signature")
+        
+        # Parse webhook payload
+        try:
+            payload = await request.json()
+        except Exception:
+            logger.error("Invalid JSON in webhook payload")
+            raise HTTPException(status_code=400, detail="Invalid JSON payload")
+        
+        # Extract event metadata
+        meta = payload.get("meta", {})
+        event_name = meta.get("event_name", "")
+        custom_data = meta.get("custom_data", {})
+        
+        # Extract subscription/order data
+        data = payload.get("data", {})
+        attributes = data.get("attributes", {})
+        
+        # Get user identification from custom data
+        user_id = custom_data.get("user_id")
+        plan_id = custom_data.get("plan_id")
+        billing_cycle = custom_data.get("billing_cycle", "monthly")
+        
+        # Extract Lemon Squeezy IDs
+        ls_customer_id = str(attributes.get("customer_id", ""))
+        ls_subscription_id = str(data.get("id", ""))
+        ls_order_id = str(attributes.get("order_id", "")) if attributes.get("order_id") else None
+        
+        # If user_id not in custom_data, try to find from existing subscription
+        if not user_id and ls_customer_id:
+            existing = supabase.table('subscriptions') \
+                .select('user_id') \
+                .eq('lemon_squeezy_customer_id', ls_customer_id) \
+                .execute()
+            if existing.data and len(existing.data) > 0:
+                user_id = existing.data[0].get('user_id')
+        
+        logger.info(f"Lemon Squeezy webhook: {event_name} for user {user_id}, plan {plan_id}")
+        
+        # Process based on event type
+        if event_name in ["subscription_created", "subscription_updated", "subscription_resumed"]:
+            if not user_id:
+                logger.error(f"No user_id found in webhook for event {event_name}")
+                # Return 200 to acknowledge receipt but log error
+                return {"status": "warning", "message": "No user_id found, subscription not updated"}
+            
+            # Determine subscription status
+            ls_status = attributes.get("status", "active")
+            status_mapping = {
+                "active": "active",
+                "on_trial": "trialing",
+                "paused": "paused",
+                "past_due": "past_due",
+                "unpaid": "past_due",
+                "cancelled": "cancelled",
+                "expired": "expired"
+            }
+            subscription_status = status_mapping.get(ls_status, "active")
+            
+            # Get billing dates
+            renews_at = attributes.get("renews_at")
+            ends_at = attributes.get("ends_at")
+            created_at = attributes.get("created_at")
+            
+            # If plan_id not provided, try to get from variant
+            if not plan_id:
+                variant_id = str(attributes.get("variant_id", ""))
+                if variant_id:
+                    # Lookup plan by variant ID
+                    plan_lookup = supabase.table('plans') \
+                        .select('id') \
+                        .or_(f"lemon_squeezy_variant_id_monthly.eq.{variant_id},lemon_squeezy_variant_id_yearly.eq.{variant_id}") \
+                        .execute()
+                    if plan_lookup.data and len(plan_lookup.data) > 0:
+                        plan_id = plan_lookup.data[0].get('id')
+            
+            # Default to starter if still no plan_id
+            if not plan_id:
+                plan_id = 'starter'
+                logger.warning(f"Could not determine plan_id, defaulting to 'starter'")
+            
+            # Prepare subscription data for upsert
+            subscription_data = {
+                "user_id": user_id,
+                "plan_id": plan_id,
+                "status": subscription_status,
+                "provider": "lemonsqueezy",
+                "lemon_squeezy_customer_id": ls_customer_id,
+                "lemon_squeezy_subscription_id": ls_subscription_id,
+                "lemon_squeezy_order_id": ls_order_id,
+                "current_period_end": renews_at or ends_at,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            # Upsert subscription (insert or update based on user_id)
+            result = supabase.table('subscriptions') \
+                .upsert(subscription_data, on_conflict='user_id') \
+                .execute()
+            
+            if result.data:
+                logger.info(f"Subscription upserted successfully for user {user_id}")
+                return {"status": "success", "message": f"Subscription {event_name} processed"}
+            else:
+                logger.error(f"Failed to upsert subscription for user {user_id}")
+                return {"status": "error", "message": "Database update failed"}
+        
+        elif event_name in ["subscription_cancelled", "subscription_expired"]:
+            if not user_id and not ls_customer_id:
+                logger.error("No user identification for cancellation event")
+                return {"status": "warning", "message": "No user identification found"}
+            
+            # Update subscription status
+            query = supabase.table('subscriptions')
+            
+            if user_id:
+                query = query.eq('user_id', user_id)
+            else:
+                query = query.eq('lemon_squeezy_customer_id', ls_customer_id)
+            
+            # Get the ends_at date if available
+            ends_at = attributes.get("ends_at")
+            
+            update_data = {
+                "status": "cancelled" if event_name == "subscription_cancelled" else "expired",
+                "cancel_at_period_end": True,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            if ends_at:
+                update_data["current_period_end"] = ends_at
+            
+            result = query.update(update_data).execute()
+            
+            logger.info(f"Subscription {event_name} processed for user {user_id or ls_customer_id}")
+            return {"status": "success", "message": f"Subscription {event_name} processed"}
+        
+        elif event_name == "subscription_paused":
+            if user_id:
+                supabase.table('subscriptions') \
+                    .update({
+                        "status": "paused",
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }) \
+                    .eq('user_id', user_id) \
+                    .execute()
+                logger.info(f"Subscription paused for user {user_id}")
+            return {"status": "success", "message": "Subscription paused"}
+        
+        elif event_name == "order_created":
+            # Log order creation (useful for one-time purchases if you add them later)
+            logger.info(f"Order created: {ls_order_id} for user {user_id}")
+            return {"status": "success", "message": "Order acknowledged"}
+        
+        else:
+            # Acknowledge unknown events without error
+            logger.info(f"Unhandled Lemon Squeezy event: {event_name}")
+            return {"status": "success", "message": f"Event {event_name} acknowledged"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing Lemon Squeezy webhook: {str(e)}")
+        # Return 200 to prevent Lemon Squeezy from retrying
+        # but log the error for investigation
+        return {"status": "error", "message": "Webhook processing error logged"}
+
+
+@api_router.get("/subscription/status/{user_id}")
+async def get_subscription_status(user_id: str):
+    """
+    Get current subscription status for a user.
+    Useful for frontend to verify subscription after payment.
+    """
+    try:
+        response = supabase.table('subscriptions') \
+            .select('*, plans(*)') \
+            .eq('user_id', user_id) \
+            .single() \
+            .execute()
+        
+        if response.data:
+            return {
+                "status": "success",
+                "subscription": response.data
+            }
+        
+        return {
+            "status": "success",
+            "subscription": None,
+            "message": "No active subscription found"
+        }
+    
+    except Exception as e:
+        logger.error(f"Error fetching subscription status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch subscription status")
 
 
 # Include the router
