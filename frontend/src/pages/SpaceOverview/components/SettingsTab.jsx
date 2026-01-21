@@ -1000,7 +1000,7 @@ const SettingsTab = ({ space, spaceId, navigate, deleteSpace, updateSpaceState, 
           space_id: spaceId,
           respondent_name: 'Test User',
           respondent_email: 'test@example.com',
-          content: 'This is a test testimonial from TrustFlow to verify your webhook connection. 🎉 Your integration is working perfectly!',
+          content: 'This is a test testimonial from TrustWall to verify your webhook connection. 🎉 Your integration is working perfectly!',
           rating: 5,
           type: 'text',
           created_at: new Date().toISOString()
@@ -1373,7 +1373,7 @@ const SettingsTab = ({ space, spaceId, navigate, deleteSpace, updateSpaceState, 
               <div className="relative max-w-sm">
                 <div className="flex items-center">
                   <Badge variant="outline" className="text-muted-foreground font-normal bg-gray-100 dark:bg-gray-800 h-10 px-3 rounded-r-none border-r-0 border-gray-200 dark:border-gray-700 hidden sm:flex">
-                    trustflow.app/submit/
+                    trustwall.app/submit/
                   </Badge>
                   <div className="relative flex-1">
                     <Input 

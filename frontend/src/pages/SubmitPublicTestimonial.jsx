@@ -325,7 +325,7 @@ const SubmitPublicTestimonial = () => {
                           name="testimonial"
                           value={formData.testimonial}
                           onChange={handleInputChange}
-                          placeholder="Tell us about your experience with TrustFlow..."
+                          placeholder="Tell us about your experience with TrustWall..."
                           rows={5}
                           className={`bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 ${
                             errors.testimonial ? 'border-red-500' : ''

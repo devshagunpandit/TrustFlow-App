@@ -559,7 +559,7 @@ const WallOfLoveContent = ({ customSpaceId }) => {
               ? 'bg-slate-900/80 text-slate-400 border border-slate-700/50' 
               : 'bg-white/90 text-slate-500 border border-slate-200/50 shadow-sm'
           }`}>
-            <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-violet-500 text-violet-500" /> TrustFlow
+            <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-violet-500 text-violet-500" /> TrustWall
           </span>
         </div>
       );
@@ -859,7 +859,7 @@ const WallOfLoveContent = ({ customSpaceId }) => {
       );
     }
 
-    // --- DEFAULT STYLE (TrustFlow Classic) ---
+    // --- DEFAULT STYLE (TrustWall Classic) ---
     return (
         <>
             {/* Branding at top-right for default style */}

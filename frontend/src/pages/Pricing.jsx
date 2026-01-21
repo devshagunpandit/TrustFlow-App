@@ -76,7 +76,7 @@ const FEATURE_COMPARISON = [
     category: 'Branding & Design',
     icon: Palette,
     features: [
-      { name: 'Remove TrustFlow Branding', free: false, starter: true, pro: true },
+      { name: 'Remove TrustWall Branding', free: false, starter: true, pro: true },
       { name: 'Custom Logo Upload', free: false, starter: true, pro: true },
       { name: 'Premium Page Themes', free: false, starter: true, pro: true },
       { name: 'Widget Presets', free: 'Basic', starter: 'Premium', pro: 'All' },
@@ -127,7 +127,7 @@ const FAQS = [
     a: 'Absolutely! When you choose yearly billing, you get 2 months free - that\'s a 17% discount compared to monthly billing.'
   },
   {
-    q: 'Can I use TrustFlow for multiple clients?',
+    q: 'Can I use TrustWall for multiple clients?',
     a: 'Yes! The Pro plan is perfect for agencies. You get 10 spaces to manage testimonials for multiple clients, plus custom domains for white-label solutions.'
   }
 ];
@@ -140,7 +140,7 @@ const TESTIMONIALS = [
     name: 'Sarah Chen',
     role: 'Founder, PixelPerfect',
     avatar: 'SC',
-    content: 'TrustFlow doubled our conversion rate. The social proof popups are a game-changer!',
+    content: 'TrustWall doubled our conversion rate. The social proof popups are a game-changer!',
     rating: 5
   },
   {
@@ -218,7 +218,7 @@ const PricingPage = () => {
         videoTestimonials: dbPlan.max_videos === 0 
           ? 'No Videos' 
           : `${dbPlan.max_videos} Videos`,
-        branding: dbPlan.features?.edit_form?.remove_branding ? 'Remove Branding ✓' : 'TrustFlow Branding',
+        branding: dbPlan.features?.edit_form?.remove_branding ? 'Remove Branding ✓' : 'TrustWall Branding',
         customLogo: dbPlan.features?.edit_form?.custom_logo || false,
         pageThemes: dbPlan.features?.edit_form?.page_theme ? 'Premium Themes' : 'Basic Theme',
         widgetPresets: dbPlan.id === 'pro' ? 'All Presets' : dbPlan.id === 'starter' ? 'Premium Presets' : 'Free Presets',
@@ -710,7 +710,7 @@ const PricingPage = () => {
                 Ready to boost your conversions?
               </h2>
               <p className="text-lg text-white/80 mb-8 max-w-xl mx-auto">
-                Join thousands of businesses using TrustFlow to collect and display 
+                Join thousands of businesses using TrustWall to collect and display 
                 authentic testimonials. Start free today!
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

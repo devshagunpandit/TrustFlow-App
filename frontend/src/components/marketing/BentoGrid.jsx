@@ -49,7 +49,7 @@ const BentoGrid = () => {
             Everything you need to build trust
           </h2>
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            From collection to display, TrustFlow provides all the tools you need to leverage social proof effectively.
+            From collection to display, TrustWall provides all the tools you need to leverage social proof effectively.
           </p>
         </motion.div>
 

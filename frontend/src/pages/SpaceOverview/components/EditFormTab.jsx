@@ -1346,7 +1346,7 @@ const EditFormTab = ({
                                         <ExternalLink className="w-3.5 h-3.5" />
                                       </span>
                                     ) : (
-                                      /* Default TrustFlow Promo */
+                                      /* Default TrustWall Promo */
                                       <>
                                         <p className="text-sm text-slate-700 dark:text-slate-300">
                                           Want to collect testimonials like this?
@@ -1371,7 +1371,7 @@ const EditFormTab = ({
                     {/* FOOTER - Respects hide_branding */}
                     {!formSettings.extra_settings?.hide_branding && (
                       <div className="text-center mt-6">
-                        <p className={`text-sm ${themeClasses.textMuted}`}>Powered by <span className="font-medium text-violet-600">TrustFlow</span></p>
+                        <p className={`text-sm ${themeClasses.textMuted}`}>Powered by <span className="font-medium text-violet-600">TrustWall</span></p>
                       </div>
                     )}
 
@@ -1709,7 +1709,7 @@ const EditFormTab = ({
                       <Label className="text-sm font-semibold text-slate-800">Remove Form Branding</Label>
                       <FeatureIndicator featureKey="edit_form.remove_branding" size="xs" />
                     </div>
-                    <p className="text-[10px] text-slate-500">Hide "Powered by TrustFlow" from submission form</p>
+                    <p className="text-[10px] text-slate-500">Hide "Powered by TrustWall" from submission form</p>
                   </div>
                   <Switch 
                     checked={formSettings.extra_settings?.hide_branding || false} 

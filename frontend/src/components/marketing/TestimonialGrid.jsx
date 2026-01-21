@@ -45,7 +45,7 @@ const TestimonialGrid = ({
               Loved by thousands of users
             </h2>
             <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-              See what our customers are saying about TrustFlow
+              See what our customers are saying about TrustWall
             </p>
           </motion.div>
         )}

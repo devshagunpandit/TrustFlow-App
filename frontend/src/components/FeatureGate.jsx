@@ -29,7 +29,7 @@ const FEATURE_INFO = {
   // Widget Features
   'widget.remove_branding': {
     title: 'White Label Widget',
-    description: 'Remove "Powered by TrustFlow" watermark for a clean, professional look',
+    description: 'Remove "Powered by TrustWall" watermark for a clean, professional look',
     icon: '✨',
     benefits: ['Professional appearance', 'Your brand only', 'Agency-ready']
   },
@@ -79,7 +79,7 @@ const FEATURE_INFO = {
   },
   'edit_form.remove_branding': {
     title: 'White Label Forms',
-    description: 'Remove TrustFlow branding from your collection forms',
+    description: 'Remove TrustWall branding from your collection forms',
     icon: '✨',
     benefits: ['Your brand only', 'Professional forms', 'Agency-ready']
   },

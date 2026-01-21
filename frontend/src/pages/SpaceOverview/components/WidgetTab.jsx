@@ -418,7 +418,7 @@ const WidgetTab = ({
               ? 'bg-slate-900/80 text-slate-400 border border-slate-700/50' 
               : 'bg-white/90 text-slate-500 border border-slate-200/50 shadow-sm'
           }`}>
-            <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-violet-500 text-violet-500" /> TrustFlow
+            <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-violet-500 text-violet-500" /> TrustWall
           </span>
         </div>
       );
@@ -607,7 +607,7 @@ const WidgetTab = ({
       );
     }
 
-    // --- DEFAULT STYLE (TrustFlow Classic) ---
+    // --- DEFAULT STYLE (TrustWall Classic) ---
     return (
       <>
         <BrandingBadge position="top-right" />
@@ -1613,7 +1613,7 @@ const WidgetTab = ({
                    <div className="flex items-center justify-between">
                        <div className="space-y-0.5">
                            <Label className="text-sm font-semibold text-slate-800">Remove Branding</Label>
-                           <p className="text-[10px] text-slate-500">Hide "Powered by TrustFlow" badge</p>
+                           <p className="text-[10px] text-slate-500">Hide "Powered by TrustWall" badge</p>
                        </div>
                        <ToggleSwitch 
                           isOn={!widgetSettings.showBranding} 

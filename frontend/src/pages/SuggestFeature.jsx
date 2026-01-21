@@ -160,7 +160,7 @@ const SuggestFeature = () => {
             
             <p className="text-lg text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
               We love hearing from our users! Share your feature ideas and help 
-              shape the future of TrustFlow.
+              shape the future of TrustWall.
             </p>
           </motion.div>
 
@@ -401,7 +401,7 @@ const SuggestFeature = () => {
                         We're always improving
                       </h3>
                       <p className="text-sm text-violet-700 dark:text-violet-400">
-                        Many of TrustFlow's best features came from user suggestions just like yours. 
+                        Many of TrustWall's best features came from user suggestions just like yours. 
                         Every idea matters!
                       </p>
                     </div>

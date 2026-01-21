@@ -97,7 +97,7 @@ const SpaceOverview = () => {
     // New Settings for Tasks
     smoothContinuousScroll: false,  // Marquee-style infinite scroll
     smoothScrollSpeed: 30,          // Pixels per second for smooth scroll
-    showBranding: true,             // Show "Powered by TrustFlow" badge
+    showBranding: true,             // Show "Powered by TrustWall" badge
     seeMoreEnabled: true,           // Toggle for See More button visibility
     seeMoreButtonText: 'See More',  // See More button text
     seeMoreButtonLink: '#',         // See More button redirect URL
