@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -260,6 +261,16 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-background to-indigo-50 dark:from-violet-950/20 dark:via-background dark:to-indigo-950/20 p-4 perspective-1000">
+      <Helmet>
+        <title>Login | TrustWall - Secure Access</title>
+        <meta name="description" content="Log in to your TrustWall dashboard to manage spaces, collect video testimonials, and embed widgets." />
+        <link rel="canonical" href="https://trustwall.live/login" />
+        {/* Marketing Hooks */}
+        <meta property="og:title" content="Login to TrustWall" />
+        <meta property="og:description" content="Manage your social proof and testimonials from one secure dashboard." />
+        <meta property="og:url" content="https://trustwall.live/login" />
+        <meta property="og:type" content="website" />
+      </Helmet>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

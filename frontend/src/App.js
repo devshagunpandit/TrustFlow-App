@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { Toaster } from "@/components/ui/toaster";
@@ -233,14 +234,16 @@ function App() {
 
   // Normal TrustFlow app
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <SubscriptionProvider>
-          <AppRoutes />
-          <Toaster />
-        </SubscriptionProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <SubscriptionProvider>
+            <AppRoutes />
+            <Toaster />
+          </SubscriptionProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   );
 }
 
