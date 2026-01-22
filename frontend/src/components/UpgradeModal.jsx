@@ -28,9 +28,14 @@ import {
   Star,
   Shield,
   Lock,
-  TrendingUp
+  TrendingUp,
+  Loader2,
+  ExternalLink
 } from 'lucide-react';
 import { usePlanCheck } from '@/hooks/useFeature';
+import { fetchAllPlans } from '@/contexts/SubscriptionContext';
+import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 
 /**
  * Feature descriptions for the upgrade modal
@@ -184,6 +189,15 @@ export const UpgradeModal = ({
   const navigate = useNavigate();
   const { currentPlanId } = usePlanCheck();
   const [showConfetti, setShowConfetti] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [plans, setPlans] = useState([]);
+
+  // Fetch plans on open
+  useEffect(() => {
+    if (open) {
+      fetchAllPlans().then(data => setPlans(data || []));
+    }
+  }, [open]);
 
   // Get feature info
   const featureInfo = FEATURE_INFO[featureKey] || {
@@ -212,9 +226,99 @@ export const UpgradeModal = ({
     }
   }, [open]);
 
+  // Direct checkout handler - redirects immediately to payment
+  const handleUpgradeNow = async () => {
+    const selectedPlan = plans.find(p => p.id === requiredPlan);
+    if (!selectedPlan) {
+      toast.error('Plan not found. Please try again.');
+      return;
+    }
+    
+    // Get user from supabase auth
+    let user = null;
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      user = authUser;
+    } catch (e) {
+      console.error('Error getting user:', e);
+    }
+    
+    if (!user) {
+      toast.error('Please log in to upgrade your plan.');
+      onOpenChange(false);
+      navigate('/login?redirect=/pricing');
+      return;
+    }
+    
+    const variantId = selectedPlan.lemon_squeezy_variant_id_monthly;
+    
+    if (!variantId) {
+      toast.error(`${selectedPlan.name} plan is not available yet. Please try again later.`);
+      return;
+    }
+    
+    setCheckoutLoading(true);
+    
+    try {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+      
+      const API_BASE = process.env.REACT_APP_BACKEND_URL || 
+                       process.env.REACT_APP_API_URL || 
+                       'https://trust-flow-app.vercel.app';
+      
+      const response = await fetch(`${API_BASE}/api/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan_id: requiredPlan,
+          variant_id: variantId,
+          user_id: user.id,
+          user_email: user.email,
+          billing_cycle: 'monthly'
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to create checkout session');
+      }
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        toast.success('Redirecting to secure checkout...', { duration: 2000 });
+        setTimeout(() => {
+          window.location.href = data.url;
+        }, 300);
+      } else {
+        throw new Error('No checkout URL received');
+      }
+      
+    } catch (error) {
+      console.error('Checkout error:', error);
+      if (error.message.includes('not configured')) {
+        toast.error('Payment service is being set up. Please try again later.');
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        toast.error('Connection error. Please check your internet and try again.');
+      } else {
+        toast.error(error.message || 'Unable to start checkout. Please try again.');
+      }
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  // Navigate to pricing page for plan comparison
   const handleViewPlans = () => {
     onOpenChange(false);
-    navigate(`/pricing?highlight=${requiredPlan}&feature=${encodeURIComponent(featureKey || '')}`);
+    navigate('/pricing');
   };
 
   return (
@@ -332,19 +436,31 @@ export const UpgradeModal = ({
           {/* CTA Buttons */}
           <div className="space-y-3">
             <Button
-              onClick={handleViewPlans}
+              onClick={handleUpgradeNow}
+              disabled={checkoutLoading}
               className="w-full h-12 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300"
             >
-              <span>View All Plans</span>
-              <ArrowRight className="w-4 h-4 ml-2" />
+              {checkoutLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <span>Upgrade to {planInfo.name}</span>
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
             </Button>
             
             <Button
               variant="ghost"
-              onClick={() => onOpenChange(false)}
-              className="w-full text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              onClick={handleViewPlans}
+              disabled={checkoutLoading}
+              className="w-full text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
             >
-              Maybe Later
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Compare all plans
             </Button>
           </div>
 

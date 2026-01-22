@@ -11,8 +11,10 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Lock, Crown, Sparkles, ArrowRight, Check, X, Zap, Rocket, 
-  Star, Shield, TrendingUp, ChevronRight, Heart, Gem
+  Star, Shield, TrendingUp, ChevronRight, Heart, Gem, Loader2, ExternalLink
 } from 'lucide-react';
+import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -348,6 +350,7 @@ export const UpgradeBanner = ({ open, onOpenChange, featureKey }) => {
   const { planHierarchy, allPlans } = useSubscription();
   const { requiredPlan, featureDisplayName } = useFeature(featureKey);
   const [plans, setPlans] = useState([]);
+  const [checkoutLoading, setCheckoutLoading] = useState(null);
   
   // Fetch plans data
   useEffect(() => {
@@ -371,9 +374,105 @@ export const UpgradeBanner = ({ open, onOpenChange, featureKey }) => {
   const isFreeUser = currentPlan === 'free';
   const isStarterUser = currentPlan === 'starter';
   
-  const handleSelectPlan = (planId) => {
+  // Direct checkout handler - redirects immediately to payment
+  const handleSelectPlan = async (planId) => {
+    if (planId === 'free') return;
+    
+    const selectedPlan = plans.find(p => p.id === planId);
+    if (!selectedPlan) {
+      toast.error('Plan not found. Please try again.');
+      return;
+    }
+    
+    // Get user from auth context via window or redirect to login
+    const userStr = localStorage.getItem('sb-user') || sessionStorage.getItem('sb-user');
+    let user = null;
+    try {
+      // Try to get user from supabase auth
+      const { supabase } = await import('@/lib/supabase');
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      user = authUser;
+    } catch (e) {
+      console.error('Error getting user:', e);
+    }
+    
+    if (!user) {
+      toast.error('Please log in to upgrade your plan.');
+      onOpenChange(false);
+      navigate('/login?redirect=/pricing');
+      return;
+    }
+    
+    // Get variant ID (monthly by default from banner)
+    const variantId = selectedPlan.lemon_squeezy_variant_id_monthly;
+    
+    if (!variantId) {
+      toast.error(`${selectedPlan.name} plan is not available yet. Please try again later.`);
+      return;
+    }
+    
+    setCheckoutLoading(planId);
+    
+    try {
+      // Trigger confetti for positive UX
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+      
+      const API_BASE = process.env.REACT_APP_BACKEND_URL || 
+                       process.env.REACT_APP_API_URL || 
+                       'https://trust-flow-app.vercel.app';
+      
+      const response = await fetch(`${API_BASE}/api/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan_id: planId,
+          variant_id: variantId,
+          user_id: user.id,
+          user_email: user.email,
+          billing_cycle: 'monthly'
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to create checkout session');
+      }
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        toast.success('Redirecting to secure checkout...', { duration: 2000 });
+        setTimeout(() => {
+          window.location.href = data.url;
+        }, 300);
+      } else {
+        throw new Error('No checkout URL received');
+      }
+      
+    } catch (error) {
+      console.error('Checkout error:', error);
+      if (error.message.includes('not configured')) {
+        toast.error('Payment service is being set up. Please try again later.');
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        toast.error('Connection error. Please check your internet and try again.');
+      } else {
+        toast.error(error.message || 'Unable to start checkout. Please try again.');
+      }
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
+  
+  // Navigate to pricing page for plan comparison
+  const handleComparePlans = () => {
     onOpenChange(false);
-    navigate(`/pricing?highlight=${planId}&feature=${encodeURIComponent(featureKey)}`);
+    navigate('/pricing');
   };
 
   // Confetti animation on hover
@@ -474,6 +573,8 @@ export const UpgradeBanner = ({ open, onOpenChange, featureKey }) => {
                 onSelect={() => handleSelectPlan('starter')}
                 isHovered={hoveredPlan === 'starter'}
                 onHover={setHoveredPlan}
+                isLoading={checkoutLoading === 'starter'}
+                disabled={checkoutLoading !== null}
               />
             )}
             
@@ -485,6 +586,8 @@ export const UpgradeBanner = ({ open, onOpenChange, featureKey }) => {
                 onSelect={() => handleSelectPlan('pro')}
                 isHovered={hoveredPlan === 'pro'}
                 onHover={setHoveredPlan}
+                isLoading={checkoutLoading === 'pro'}
+                disabled={checkoutLoading !== null}
               />
             )}
           </div>
@@ -494,8 +597,17 @@ export const UpgradeBanner = ({ open, onOpenChange, featureKey }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="mt-4 sm:mt-6 text-center"
+            className="mt-4 sm:mt-6 text-center space-y-3"
           >
+            {/* Compare All Plans Link */}
+            <button
+              onClick={handleComparePlans}
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Compare all plans
+            </button>
+            
             <p className="text-[10px] sm:text-xs text-slate-400 flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap">
               <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>3-day money-back</span>
@@ -513,7 +625,7 @@ export const UpgradeBanner = ({ open, onOpenChange, featureKey }) => {
 // ============================================
 // PLAN CARD - Individual plan display in modal
 // ============================================
-const PlanCard = ({ plan, isRecommended, onSelect, isHovered, onHover }) => {
+const PlanCard = ({ plan, isRecommended, onSelect, isHovered, onHover, isLoading, disabled }) => {
   if (!plan) return null;
   
   const isPro = plan.id === 'pro';
@@ -569,12 +681,13 @@ const PlanCard = ({ plan, isRecommended, onSelect, isHovered, onHover }) => {
       onMouseEnter={() => onHover?.(plan.id)}
       onMouseLeave={() => onHover?.(null)}
       className={cn(
-        "relative p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 cursor-pointer transition-all duration-300",
+        "relative p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all duration-300",
+        disabled ? "cursor-wait opacity-80" : "cursor-pointer",
         isRecommended 
           ? `bg-gradient-to-br ${config.bgGradient} ${config.borderColor} shadow-lg`
           : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
       )}
-      onClick={onSelect}
+      onClick={disabled ? undefined : onSelect}
     >
       {/* Recommended Badge */}
       {isRecommended && (
@@ -638,10 +751,20 @@ const PlanCard = ({ plan, isRecommended, onSelect, isHovered, onHover }) => {
           `bg-gradient-to-r ${config.gradient}`,
           "hover:shadow-xl hover:brightness-110"
         )}
+        disabled={disabled}
       >
-        <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 group-hover:rotate-12 transition-transform" />
-        Upgrade to {plan.name}
-        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1.5 sm:ml-2 group-hover:translate-x-1 transition-transform" />
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          <>
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 group-hover:rotate-12 transition-transform" />
+            Upgrade to {plan.name}
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1.5 sm:ml-2 group-hover:translate-x-1 transition-transform" />
+          </>
+        )}
       </Button>
     </motion.div>
   );
