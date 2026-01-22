@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -374,6 +375,17 @@ const PricingPage = () => {
 
   return (
     <MarketingLayout>
+      <Helmet>
+        <title>Pricing Plans | TrustWall - Affordable Social Proof</title>
+        <meta name="description" content="Simple, transparent pricing for businesses of all sizes. Start for free, upgrade as you grow. Compare Free vs Pro plans." />
+        <meta name="keywords" content="TrustWall pricing, testimonial tool cost, social proof software pricing, free testimonial widget" />
+        <link rel="canonical" href="https://trustwall.live/pricing" />
+        {/* Marketing Hooks */}
+        <meta property="og:title" content="TrustWall Pricing - Start Free, Grow Big" />
+        <meta property="og:description" content="Zero hidden fees. 3-day money-back guarantee. Check out our affordable plans for agencies and creators." />
+        <meta property="og:image" content="https://trustwall.live/og-pricing.png" />
+        <meta property="og:url" content="https://trustwall.live/pricing" />
+      </Helmet>
       <div className="min-h-screen">
         {/* Loading State */}
         {isLoading && (
