@@ -49,12 +49,12 @@ const LogoMarquee = () => {
           {duplicatedLogos.map((logo, index) => (
             <div
               key={`${logo.id}-${index}`}
-              className="flex-shrink-0 flex items-center justify-center h-12 w-32 md:w-40"
+              className="flex-shrink-0 flex items-center justify-center h-12 w-32 md:w-40 group"
             >
               <img
                 src={logo.logoUrl}
                 alt={logo.altText}
-                className="h-8 md:h-10 w-auto object-contain opacity-60 hover:opacity-100 grayscale hover:grayscale-0 transition-all duration-300 dark:invert dark:brightness-200"
+                className="h-8 md:h-10 w-auto object-contain transition-transform duration-300 ease-out group-hover:scale-110"
                 loading="lazy"
                 onError={(e) => {
                   e.target.style.display = 'none';

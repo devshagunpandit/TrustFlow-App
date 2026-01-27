@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Star, Twitter, Linkedin, Github, Youtube, Heart, ArrowUpRight, Check, Sparkles } from 'lucide-react';
+import { Star, Twitter, Linkedin, Github, Youtube, Heart, ArrowUpRight, Check, Sparkles, Mail } from 'lucide-react';
 import { companyInfo, footerLinks } from '@/data/landingPageData';
 import confetti from 'canvas-confetti';
 
@@ -102,31 +102,18 @@ const MarketingFooter = () => {
             </Link>
 
             {/* Description */}
-            <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-6 max-w-xs">
+            <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4 max-w-xs">
               {companyInfo.description}. The easiest way to collect and showcase customer testimonials.
             </p>
 
-            {/* Social Links */}
-            <div className="flex items-center gap-3">
-              {Object.entries(companyInfo.socialLinks).map(([platform, url]) => {
-                const Icon = socialIcons[platform];
-                if (!Icon) return null;
-                return (
-                  <motion.a
-                    key={platform}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    whileHover={{ scale: 1.1, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-300 dark:hover:border-violet-600 hover:shadow-lg hover:shadow-violet-500/10 transition-all"
-                    aria-label={`Follow us on ${platform}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </motion.a>
-                );
-              })}
-            </div>
+            {/* Support Email - Prominently Displayed */}
+            <a 
+              href={`mailto:${companyInfo.supportEmail}`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-all group"
+            >
+              <Mail className="w-4 h-4" />
+              <span className="text-sm font-medium">{companyInfo.supportEmail}</span>
+            </a>
           </motion.div>
 
           {/* Product Links */}

@@ -6,6 +6,7 @@ import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import BrandedLoader from "@/components/BrandedLoader";
+import ScrollToTop from "@/components/ScrollToTop";
 
 // Pages
 import Landing from "@/pages/NewLanding";
@@ -29,6 +30,7 @@ import ReportBug from "@/pages/ReportBug";
 import SuggestFeature from "@/pages/SuggestFeature";
 import SubmitPublicTestimonial from "@/pages/SubmitPublicTestimonial";
 import PublicPricing from "@/pages/PublicPricing";
+import IntegrationDocs from "@/pages/IntegrationDocs";
 
 // List of known TrustFlow domains (add your production domains here)
 const KNOWN_DOMAINS = [
@@ -188,6 +190,7 @@ function AppRoutes() {
       <Route path="/report-bug" element={<ReportBug />} />
       <Route path="/suggest-feature" element={<SuggestFeature />} />
       <Route path="/submit-testimonial" element={<SubmitPublicTestimonial />} />
+      <Route path="/docs/integration" element={<IntegrationDocs />} />
 
       
       {/* Public Submission Portal */}
@@ -236,6 +239,7 @@ function App() {
   return (
     <HelmetProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <SubscriptionProvider>
             <AppRoutes />

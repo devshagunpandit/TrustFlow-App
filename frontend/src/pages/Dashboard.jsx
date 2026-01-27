@@ -1610,7 +1610,7 @@ const Dashboard = () => {
       }
       
       const accessToken = sessionData.session.access_token;
-      const BACKEND_URL = "https://verbose-engine-vprqrwgvr6rf66jx-8000.app.github.dev";
+      const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://trust-flow-app.vercel.app';
       
       const response = await fetch(`${BACKEND_URL}/api/create-portal-session`, {
         method: 'POST',

@@ -273,7 +273,11 @@ const PricingPage = () => {
 
   // Handle plan selection - Lemon Squeezy Checkout Integration
   const handleSelectPlan = async (planId) => {
-    if (planId === 'free') return;
+    // Free plan - redirect to signup
+    if (planId === 'free') {
+      navigate('/signup');
+      return;
+    }
     
     // TASK 1: Prevent duplicate subscriptions - redirect active subscribers to customer portal
     if (subscription && subscription.status === 'active' && subscription.plan_id !== 'free') {

@@ -14,8 +14,10 @@ import {
   Check, X, Sparkles, RefreshCw, Gauge, ChevronLeft, ChevronRight, Star, BadgeCheck,
   Smartphone, Tablet, Laptop, Save, RotateCcw, Shuffle, Heading,
   Maximize2, Minimize2, Layers, Info, AlertCircle, ChevronDown, CheckCircle, AlertTriangle, Bell, Clock, MapPin,
-  ExternalLink, Crown, Link as LinkIcon, Heart, Lock, Loader2
+  ExternalLink, Crown, Link as LinkIcon, Heart, Lock, Loader2, HelpCircle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { StylishVideoPlayer, PremiumToggle, SectionHeader, CARD_WIDTH, GAP, PADDING_X } from './SharedComponents';
 import confetti from 'canvas-confetti';
 import { FeatureGate, LockedSwitch, PlanBadge, FeatureIndicator, LockedIndicator } from '@/components/FeatureGate';
@@ -68,6 +70,9 @@ const WidgetTab = ({
   saveWidgetSettings,   // <--- Prop from Parent
   DEFAULT_WIDGET_SETTINGS
 }) => {
+  
+  // -- Navigation --
+  const navigate = useNavigate();
   
   // -- State --
   const [showMobileWarning, setShowMobileWarning] = useState(false);
@@ -962,6 +967,25 @@ const WidgetTab = ({
                  <Button size="sm" onClick={copyEmbedCode} className="bg-violet-600 hover:bg-violet-700 shadow-md shadow-violet-500/20 text-xs h-8">
                     <Copy className="w-3.5 h-3.5 mr-1.5 " /> Copy Code
                  </Button>
+                 
+                 {/* HELP ICON - Navigate to Integration Docs */}
+                 <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => navigate(`/docs/integration?spaceId=${spaceId}`)}
+                          className="h-8 w-8 p-0 border-slate-200 dark:border-slate-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:border-violet-300 dark:hover:border-violet-600"
+                        >
+                          <HelpCircle className="w-4 h-4 text-slate-500 hover:text-violet-600" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="bg-slate-900 text-white border-0">
+                        <p className="text-xs">How to install?</p>
+                      </TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
                  
                  {/* FEEDBACK BUBBLE */}
                  <AnimatePresence>

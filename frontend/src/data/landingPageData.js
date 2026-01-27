@@ -15,14 +15,15 @@ export const companyInfo = {
   tagline: 'Social Proof on Autopilot',
   description: 'Collect and display beautiful testimonials in minutes',
   foundedYear: 2024,
-  email: 'hello@trustwall.app',
-  supportEmail: 'support@trustwall.app',
-  website: 'https://trustwall.app',
+  email: 'support@trustwall.live',
+  supportEmail: 'support@trustwall.live',
+  website: 'https://trustwall.live',
   socialLinks: {
-    twitter: 'https://twitter.com/trustwallapp',
-    linkedin: 'https://linkedin.com/company/trustwall',
-    github: 'https://github.com/trustwall',
-    youtube: 'https://youtube.com/@trustwall',
+    // Social links disabled for now - will be enabled later
+    // twitter: 'https://twitter.com/trustwallapp',
+    // linkedin: 'https://linkedin.com/company/trustwall',
+    // github: 'https://github.com/trustwall',
+    // youtube: 'https://youtube.com/@trustwall',
   },
 };
 
@@ -46,10 +47,11 @@ export const footerLinks = {
     { label: 'Wall of Love', href: '/wall-of-love' },
     { label: 'Demo', href: '/demo' },
     { label: 'Submit Testimonial', href: '/submit-testimonial' },
+    { label: 'Integration Guide', href: '/docs/integration' },
   ],
   company: [
     { label: 'About Us', href: '/about' },
-    { label: 'Contact', href: 'mailto:hello@trustwall.app' },
+    { label: 'Contact', href: 'mailto:support@trustwall.live' },
   ],
   legal: [
     { label: 'Privacy Policy', href: '/privacy' },
@@ -63,56 +65,80 @@ export const footerLinks = {
 };
 
 // =============================================================================
-// TRUSTED BY LOGOS (Social Proof Strip)
+// TRUSTED BY LOGOS (Social Proof Strip) - Imaginary Brands
 // =============================================================================
 export const trustedByLogos = [
   {
     id: 1,
-    name: 'Vercel',
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/vercel.svg',
-    altText: 'Vercel Logo',
+    name: 'Flowbase',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%236366f1">Flowbase</text></svg>',
+    altText: 'Flowbase Logo',
   },
   {
     id: 2,
-    name: 'Stripe',
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/stripe-4.svg',
-    altText: 'Stripe Logo',
+    name: 'Nexora',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%238b5cf6">Nexora</text></svg>',
+    altText: 'Nexora Logo',
   },
   {
     id: 3,
-    name: 'Notion',
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/notion-2.svg',
-    altText: 'Notion Logo',
+    name: 'Zenith',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%2310b981">Zenith</text></svg>',
+    altText: 'Zenith Logo',
   },
   {
     id: 4,
-    name: 'Linear',
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/linear-1.svg',
-    altText: 'Linear Logo',
+    name: 'Cloudly',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%230ea5e9">Cloudly</text></svg>',
+    altText: 'Cloudly Logo',
   },
   {
     id: 5,
-    name: 'Figma',
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/figma-icon.svg',
-    altText: 'Figma Logo',
+    name: 'Sparkify',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%23f59e0b">Sparkify</text></svg>',
+    altText: 'Sparkify Logo',
   },
   {
     id: 6,
-    name: 'Supabase',
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/supabase-icon.svg',
-    altText: 'Supabase Logo',
+    name: 'Lumina',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%23ec4899">Lumina</text></svg>',
+    altText: 'Lumina Logo',
   },
   {
     id: 7,
-    name: 'Loom',
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/loom-1.svg',
-    altText: 'Loom Logo',
+    name: 'Vertix',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%2314b8a6">Vertix</text></svg>',
+    altText: 'Vertix Logo',
   },
   {
     id: 8,
-    name: 'Intercom',
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/intercom-2.svg',
-    altText: 'Intercom Logo',
+    name: 'Pulsify',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%23f43f5e">Pulsify</text></svg>',
+    altText: 'Pulsify Logo',
+  },
+  {
+    id: 9,
+    name: 'Streamly',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%233b82f6">Streamly</text></svg>',
+    altText: 'Streamly Logo',
+  },
+  {
+    id: 10,
+    name: 'Orbita',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%2322c55e">Orbita</text></svg>',
+    altText: 'Orbita Logo',
+  },
+  {
+    id: 11,
+    name: 'Pivotal',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%23a855f7">Pivotal</text></svg>',
+    altText: 'Pivotal Logo',
+  },
+  {
+    id: 12,
+    name: 'Quantum',
+    logoUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 30"><text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="%236366f1">Quantum</text></svg>',
+    altText: 'Quantum Logo',
   },
 ];
 
